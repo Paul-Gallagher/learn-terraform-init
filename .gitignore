@@ -3,12 +3,20 @@
 *.tfstate.backup
 *.tfstate.lock.info
 
+
 # logs
 *.log
 
 # Directories
-.terraform/
+**/.terraform/*
 .vagrant/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
 
 # SSH Keys
 *.pem
