@@ -1,0 +1,36 @@
+########################
+### Snowflake config ###
+########################
+Snowflake:
+  warehouse:
+    - name: WH_TEST1
+      size: X-SMALL
+      cluster_count: 4
+
+    - name: WH_TEST2
+      size: X-LARGE
+
+  # db names will gain an implicit _$env suffix
+  database:
+    - name: DB_THING1
+      extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
+
+    - name: DB_THING2
+
+  # these would create storage integrations
+  s3_integration:
+    - name: MY_INTEGRATION
+      allowed_locations:
+        - BA_OLYMPUS_${env}_CLEANED/
+        - BA_OLYMPUS_${env}_ALIGNED/
+        - BA_OLYMPUS_${env}_RAW/
+      # role always seems to be aws-account/ba-olympus-snowflake
+
+  # stage can only use allowed locations (or only 1?)
+  stage:
+    - name: MY_STAGE
+      location: BA_OLYMPUS_${env}_ALIGNED/
+      integration: MY_INTEGRATION
+
+  service_user:
+    name: AIRFLOW_MY_SERVICE_USER
