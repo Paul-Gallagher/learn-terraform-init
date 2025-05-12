@@ -37,9 +37,10 @@ Transformation:
 ### Snowflake config - why have the team chosen title-case?
 ###################################################################
 Snowflake:
-  account: IRELAND
+  account: IRELAND # this is the default
   service_user:
-    name: MY_SERVICE_USER
+    name: MY_SERVICE_USER # gets an implicit _${env} suffix
+    comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
 
   warehouse: # defaults to XSMALL
     - name: WH_TEST1
@@ -50,9 +51,8 @@ Snowflake:
   #     comment: Warehouse for one-off large runs
   #     size: XLARGE
 
-  # # db names will gain an implicit _$env suffix
   database:
-    - name: DB_THING1
+    - name: DB_THING1 # gets an implicit _${env} suffix
       # extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
 
   #   - name: DB_THING2
