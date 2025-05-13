@@ -6,18 +6,19 @@
 # The aim here is to:
 #  - apply environment-specific transformations (e.g. replace ${env} with the actual env name)
 #  - transform complex nexted structures into flat maps or lists
-#  - provide sensible defaults for optional values (e.g. cluster_count, extra_schemas)
-variable "env" {
-  type    = string
-  default = "dev" # eg from Github
-}
+#  - provide sensible defaults for optional values (e.g. clus`ter_count, extra_schemas)
+
+# from gihub workflow
+variable "env" { default = "dev" }
+variable "repo" { default = "olympus-infr-adm-snowflake" }
+variable "aws_account" { default = "347295195503" }
 
 locals {
   # some values will be passed in from the Github workflow run (e.g. env, AWS account etc)
   env          = upper(var.env)
-  aws_account  = "347295195503"
+  aws_account  = var.aws_account # avoid having to remember when to use var. and when local.
+  repo         = var.repo
   storage_role = "ba-olympus-ecpsnowflake"
-  repo         = "olympus-infr-adm-snowflake"
 
   # used in setting up storage integrations
   storage_role_arn = "arn:aws:iam::${local.aws_account}:role/${local.storage_role}"
@@ -31,6 +32,7 @@ locals {
 # --- these are purely for debugging ------------------------------------
 # output "aws_account" { value = local.aws_account }
 # output "yaml_warehouses" { value = local.yaml.warehouses }
+# output "filtered_warehouses" { value = local.filtered_warehouses }
 output "warehouses" { value = local.warehouses }
 output "databases" { value = local.databases }
 # output "integrations" { value = local.integrations }
@@ -58,7 +60,8 @@ module "snowflake_warehouse_london" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    if contains(wh.accounts, "LONDON")
+    # if contains(wh.accounts, "LONDON")
+    if wh.account == "LONDON"
   }
   name              = each.key
   size              = each.value.size
@@ -117,7 +120,8 @@ module "snowflake_warehouse_ireland" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    if contains(wh.accounts, "IRELAND")
+    # if contains(wh.accounts, "IRELAND")
+    if wh.account == "IRELAND"
   }
   name              = each.key
   size              = each.value.size

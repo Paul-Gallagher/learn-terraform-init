@@ -5,6 +5,13 @@
 
 locals {
 
+  # constants
+  default_account = "IRELAND"
+  default_wh_size = "XSMALL"
+  defaut_clusters = 1
+  default_comment = "Created by ${local.repo}"
+
+
   # first read the file as a plain string
   raw_content = file("${path.module}/config.yaml")
 
@@ -14,9 +21,8 @@ locals {
   # now decode the yaml an pull out the Snowflake section - if it exists
   raw_yaml = try(yamldecode(local.cooked_content).Snowflake, null)
 
-
   # do we have a Snowflake account override section - this is a key into Secrets Manager (?)
-  default_account = try(local.raw_yaml.account, null)
+  snowflake_account = try(local.raw_yaml.account, local.default_account)
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists
   yaml = {
@@ -29,57 +35,63 @@ locals {
 
   # now transform each section
 
-  # this was the original simple version - however it didn't allow merging of items with the same name
+  # Here is the original simple version - however it didn't allow merging of items with the same name
   # or allowing lists with a single entry to be specified as a string in the yaml
   #   warehouses = {
   #     for wh in local.yaml.warehouses :
   #     lookup(wh, "name", "") => {
-  #       size              = lookup(wh, "size", "XSMALL")
-  #       max_cluster_count = lookup(wh, "clusters", 1)
-  #       comment           = lookup(wh, "comment", "Created by ${local.repo}")
-  #       accounts          = lookup(wh, "account", [local.default_account])
+  #       size              = lookup(wh, "size", local.default_wh_size)
+  #       max_cluster_count = lookup(wh, "clusters", local.default_clusters)
+  #       comment           = lookup(wh, "comment", local.default_comment)
+  #       account           = lookup(wh, "account", local.snowflake_account)
   #     }
-  #     if contains(lookup(wh, "env", ["dev"]), "dev")
+  #     if contains(lookup(wh, "env", [local.env]), local.env)
   #   }
 
-  # I'd expect items with the same name to be for different environments
-  # this more complex version deals with edge cases where this is not the case
-  # It also allows lists with a single item to be specified without the brackets
+  # Normally, expect items with the SAME name to be for different environments
+  # This more complex version deals with edge cases where this is not the case (eg user error)
+  # This version also allows singe-value lists to be specified by a string
+  # A later addition to allow differences between accounts added extra complexity
+  # In the end I broke it down into two steps for a bit of extra legibility
+
+  filtered_warehouses = [
+    # this loop uses the ellipsis operator (...) to group all warehouses with the same name
+    # it has a filter to include only entries for the current environment
+    for wh in local.yaml.warehouses : {
+      # create a composite key that includes both name and account
+      key               = "${lookup(wh, "name", "")}_${lookup(wh, "account", local.snowflake_account)}"
+      name              = lookup(wh, "name", "")
+      size              = lookup(wh, "size", local.default_wh_size)
+      max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
+      comment           = lookup(wh, "comment", "Created by ${local.repo}")
+      account           = lookup(wh, "account", local.snowflake_account)
+    }
+    if contains(
+      # convert the env entry to a list if it's given as a string
+      [for e in(
+        try(
+          # try to access it as a list - which will fail if it's a string
+          tolist(lookup(wh, "env", [local.env])),
+          # fallback - treat as a string and wrap in a list (quacks like one anyway)
+          [lookup(wh, "env", local.env)]
+        )
+      ) : upper(e)],
+      local.env
+    )
+  ]
+
   warehouses = {
-    # this outer loop iterates over the grouped values returned by the inner loop
-    for name, wh_list in {
-      # this inner loop uses the ellipsis operator (...) to group all keys with the same name
-      # it has a filter to include only entries for the current environment
-      for wh in local.yaml.warehouses :
-      lookup(wh, "name", "") => wh...
-      if contains(
-        # convert env entry to a list if it's given as a string
-        [for e in(
-          try(
-            # Try to access as a list - will fail if it's a string
-            tolist(lookup(wh, "env", [local.env])),
-            # Fallback - treat as a string and wrap in a list
-            [lookup(wh, "env", local.env)]
-          )
-        ) : upper(e)],
-        local.env
-      )
-    } :
-    name => {
-      # Set defaults and transform, taking the last item in the group  (wh_list[length(wh_list) - 1])
-      # this means we lose any earlier definition with the same name for the same environment
-      size              = lookup(wh_list[length(wh_list) - 1], "size", "XSMALL")
-      max_cluster_count = lookup(wh_list[length(wh_list) - 1], "clusters", 1)
-      comment           = lookup(wh_list[length(wh_list) - 1], "comment", "Created by ${local.repo}")
-      # accounts can be a string or list  
-      accounts = try(
-        # try to access as a list - which will fail if it's a string
-        tolist(lookup(wh_list[length(wh_list) - 1], "account", [local.default_account])),
-        # ww couldn't access it as a list so we must have a string (quacks like one anyway)
-        [lookup(wh_list[length(wh_list) - 1], "account", local.default_account)]
-      )
+    for item in local.filtered_warehouses : item.key => {
+      # extract just the properties we need
+      name              = item.name
+      size              = item.size
+      max_cluster_count = item.max_cluster_count
+      comment           = item.comment
+      account           = item.account
     }
   }
+
+  # jump thru similar loops for the other resource types
 
   databases = {
     # see walkthru of warehouses above
@@ -100,10 +112,10 @@ locals {
     can(name) ? "${name}_${local.env}" : "" => {
       extra_schemas = lookup(db_list[length(db_list) - 1], "extra_schemas", [])
       comment       = lookup(db_list[length(db_list) - 1], "comment", "Created by ${local.repo}")
-      accounts      = lookup(db_list[length(db_list) - 1], "account", [local.default_account])
+      accounts      = lookup(db_list[length(db_list) - 1], "account", [local.snowflake_account])
       accounts = try(
-        tolist(lookup(db_list[length(db_list) - 1], "account", [local.default_account])),
-        [lookup(db_list[length(db_list) - 1], "account", local.default_account)]
+        tolist(lookup(db_list[length(db_list) - 1], "account", [local.snowflake_account])),
+        [lookup(db_list[length(db_list) - 1], "account", local.snowflake_account)]
       )
     }
   }
@@ -114,7 +126,7 @@ locals {
         for loc in ig.allowed_locations : loc
       ]
       comment  = lookup(ig, "comment", "Created by ${local.repo}")
-      accounts = lookup(ig, "account", [local.default_account])
+      accounts = lookup(ig, "account", [local.snowflake_account])
     }
   }
   stages = {
@@ -123,13 +135,13 @@ locals {
       location    = sg.location
       integration = sg.integration
       comment     = lookup(sg, "comment", "Created by ${local.repo}")
-      accounts    = lookup(sg, "account", [local.default_account])
+      accounts    = lookup(sg, "account", [local.snowflake_account])
     }
   }
   service_user = {
     name     = can(local.yaml.service_user) ? "${local.yaml.service_user.name}_${local.env}" : ""
     comment  = lookup(local.yaml.service_user, "comment", "Created by ${local.repo}")
-    accounts = lookup(local.yaml.service_user, "account", [local.default_account])
+    accounts = lookup(local.yaml.service_user, "account", [local.snowflake_account])
   }
 
 }
