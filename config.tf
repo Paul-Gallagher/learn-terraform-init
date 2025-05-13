@@ -107,7 +107,7 @@ resource "terraform_data" "validate_sections" {
 }
 
 # useful for debugging - show the transformed yaml
-output "validation_inputs" {
-  description = "Transformed yaml as passed to the validation checks"
-  value       = terraform_data.validate_sections.input
-}
+# output "validation_inputs" {
+#   description = "Transformed yaml as passed to the validation checks"
+#   value       = terraform_data.validate_sections.input
+# }

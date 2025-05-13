@@ -20,6 +20,8 @@ locals {
 
   # Snowflake resources have their ownership transferred to this user
   owner = "SYSADMIN_${local.env}"
+
+  # see config.tf which parses config.yaml and sets un various maps (eg warehouses, databases, etc
 }
 
 # --- these are purely for debugging ------------------------------------
@@ -52,6 +54,7 @@ module "snowflake_warehouse_london" {
 }
 
 module "snowflake_database_london" {
+  #   source = "git@github.com:BritishAirways-Ent/olympus-infr-adm-snowflake/src/terraform/modules/snowflake-database?ref=main"
   source = "./modules/snowflake-database"
   for_each = {
     for name, db in local.databases : name => db
@@ -110,7 +113,9 @@ module "snowflake_warehouse_ireland" {
 }
 
 module "snowflake_database_ireland" {
+  #   source = "git@github.com:BritishAirways-Ent/olympus-infr-adm-snowflake/src/terraform/modules/snowflake-database?ref=main"
   source = "./modules/snowflake-database"
+
   for_each = {
     for name, db in local.databases : name => db
     if contains(db.accounts, "IRELAND")

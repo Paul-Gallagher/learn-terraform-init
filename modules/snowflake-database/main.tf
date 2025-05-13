@@ -1,4 +1,7 @@
 # DATABASE - dummy module
+#  - creates a Snowflake database and changes its ownership
+#  - creates various schemas within that database (and changes their ownership)
+
 
 # these are our variable parameters - mostly supplied by the yaml file
 variable "name" { type = string }

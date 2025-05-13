@@ -3,6 +3,13 @@ terraform {
     tfcoremock = {
       source  = "hashicorp/tfcoremock"
       version = "0.1.2"
+
+      # without this list we'd have tp add a providers.tf to each module sub-directory
+      configuration_aliases = [
+        tfcoremock.BANGKOK,
+        tfcoremock.IRELAND,
+        tfcoremock.LONDON,
+      ]
     }
   }
 }

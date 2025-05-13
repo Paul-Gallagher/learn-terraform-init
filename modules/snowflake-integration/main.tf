@@ -1,4 +1,6 @@
 # INTEGRATION - dummy module
+#  - creates a Snowflake integration and changes its ownership
+
 
 # these are our variable parameters - mostly supplied by the yaml file
 variable "name" { type = string }

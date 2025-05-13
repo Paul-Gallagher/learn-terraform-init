@@ -46,27 +46,27 @@ Snowflake:
     - name: WH_TEST1
       clusters: 4
 
-  #   - name: WH_TEST2
-  #     account: [LONDON, IRELAND]
-  #     comment: Warehouse for one-off large runs
-  #     size: XLARGE
+    - name: WH_TEST2
+      account: [LONDON, IRELAND]
+      comment: Warehouse for one-off large runs
+      size: XLARGE
 
   database:
     - name: DB_THING1 # gets an implicit _${env} suffix
       # extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
 
-  #   - name: DB_THING2
-  #     account: [LONDON]
-  #     comment: Database for something special
+    - name: DB_THING2
+      account: [LONDON]
+      comment: Database for something special
 
-  # # these would create storage integrations
-  # s3_integration:
-  #   - name: MY_INTEGRATION
-  #     allowed_locations:
-  #       - BA_OLYMPUS_${env}_CLEANED/
-  #       - BA_OLYMPUS_${env}_ALIGNED/
-  #       - BA_OLYMPUS_${env}_RAW/
-  #     # role always seems to be aws-account/ba-olympus-snowflake ?
+  # these would create storage integrations
+  s3_integration:
+    - name: MY_INTEGRATION
+      allowed_locations:
+        - BA_OLYMPUS_${env}_CLEANED/
+        - BA_OLYMPUS_${env}_ALIGNED/
+        - BA_OLYMPUS_${env}_RAW/
+      # role always seems to be aws-account/ba-olympus-snowflake ?
 
   # # stage can only use allowed locations (only one of them?)
   stage:
