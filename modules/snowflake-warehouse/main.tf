@@ -1,4 +1,4 @@
-# WAREHOUSE - dummy module
+# SNOWFLAKE-WAREHOUSE - dummy module
 #  - creates a Snowflake warehouse and changes its ownership
 
 

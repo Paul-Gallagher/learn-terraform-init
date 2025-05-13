@@ -27,22 +27,84 @@ locals {
     service_user = try(local.raw_yaml.service_user, "")
   }
 
-  # now transform each section - icky hack on forcing tobool to fail
+  # now transform each section
+
+  # this was the original simple version - however it didn't allow merging of items with the same name
+  # or allowing lists with a single entry to be specified as a string in the yaml
+  #   warehouses = {
+  #     for wh in local.yaml.warehouses :
+  #     lookup(wh, "name", "") => {
+  #       size              = lookup(wh, "size", "XSMALL")
+  #       max_cluster_count = lookup(wh, "clusters", 1)
+  #       comment           = lookup(wh, "comment", "Created by ${local.repo}")
+  #       accounts          = lookup(wh, "account", [local.default_account])
+  #     }
+  #     if contains(lookup(wh, "env", ["dev"]), "dev")
+  #   }
+
+  # I'd expect items with the same name to be for different environments
+  # this more complex version deals with edge cases where this is not the case
+  # It also allows lists with a single item to be specified without the brackets
   warehouses = {
-    for wh in local.yaml.warehouses :
-    lookup(wh, "name", "") => {
-      size              = lookup(wh, "size", "XSMALL")
-      max_cluster_count = lookup(wh, "clusters", 1)
-      comment           = lookup(wh, "comment", "Created by ${local.repo}")
-      accounts          = lookup(wh, "account", [local.default_account])
+    # this outer loop iterates over the grouped values returned by the inner loop
+    for name, wh_list in {
+      # this inner loop uses the ellipsis operator (...) to group all keys with the same name
+      # it has a filter to include only entries for the current environment
+      for wh in local.yaml.warehouses :
+      lookup(wh, "name", "") => wh...
+      if contains(
+        # convert env entry to a list if it's given as a string
+        [for e in(
+          try(
+            # Try to access as a list - will fail if it's a string
+            tolist(lookup(wh, "env", [local.env])),
+            # Fallback - treat as a string and wrap in a list
+            [lookup(wh, "env", local.env)]
+          )
+        ) : upper(e)],
+        local.env
+      )
+    } :
+    name => {
+      # Set defaults and transform, taking the last item in the group  (wh_list[length(wh_list) - 1])
+      # this means we lose any earlier definition with the same name for the same environment
+      size              = lookup(wh_list[length(wh_list) - 1], "size", "XSMALL")
+      max_cluster_count = lookup(wh_list[length(wh_list) - 1], "clusters", 1)
+      comment           = lookup(wh_list[length(wh_list) - 1], "comment", "Created by ${local.repo}")
+      # accounts can be a string or list  
+      accounts = try(
+        # try to access as a list - which will fail if it's a string
+        tolist(lookup(wh_list[length(wh_list) - 1], "account", [local.default_account])),
+        # ww couldn't access it as a list so we must have a string (quacks like one anyway)
+        [lookup(wh_list[length(wh_list) - 1], "account", local.default_account)]
+      )
     }
   }
+
   databases = {
-    for db in local.yaml.databases :
-    can(db.name) ? "${db.name}_${local.env}" : "" => {
-      extra_schemas = lookup(db, "extra_schemas", [])
-      comment       = lookup(db, "comment", "Created by ${local.repo}")
-      accounts      = lookup(db, "account", [local.default_account])
+    # see walkthru of warehouses above
+    for name, db_list in {
+      for db in local.yaml.databases :
+      lookup(db, "name", "") => db...
+      if contains(
+        [for e in(
+          try(
+            tolist(lookup(db, "env", [local.env])),
+            [lookup(db, "env", local.env)]
+          )
+        ) : upper(e)],
+        local.env
+      )
+    } :
+    # stitch an _env suffix onto the name
+    can(name) ? "${name}_${local.env}" : "" => {
+      extra_schemas = lookup(db_list[length(db_list) - 1], "extra_schemas", [])
+      comment       = lookup(db_list[length(db_list) - 1], "comment", "Created by ${local.repo}")
+      accounts      = lookup(db_list[length(db_list) - 1], "account", [local.default_account])
+      accounts = try(
+        tolist(lookup(db_list[length(db_list) - 1], "account", [local.default_account])),
+        [lookup(db_list[length(db_list) - 1], "account", local.default_account)]
+      )
     }
   }
   integrations = {
@@ -65,8 +127,9 @@ locals {
     }
   }
   service_user = {
-    name    = can(local.yaml.service_user) ? "${local.yaml.service_user.name}_${local.env}" : ""
-    comment = lookup(local.yaml.service_user, "comment", "Created by ${local.repo}")
+    name     = can(local.yaml.service_user) ? "${local.yaml.service_user.name}_${local.env}" : ""
+    comment  = lookup(local.yaml.service_user, "comment", "Created by ${local.repo}")
+    accounts = lookup(local.yaml.service_user, "account", [local.default_account])
   }
 
 }

@@ -1,4 +1,4 @@
-# STAGE - dummy module
+# SNOWFLAKE-STAGE - dummy module
 #  - creates a Snowflake stage and changes its ownership
 
 

@@ -7,10 +7,14 @@
 #  - apply environment-specific transformations (e.g. replace ${env} with the actual env name)
 #  - transform complex nexted structures into flat maps or lists
 #  - provide sensible defaults for optional values (e.g. cluster_count, extra_schemas)
+variable "env" {
+  type    = string
+  default = "dev" # eg from Github
+}
 
 locals {
   # some values will be passed in from the Github workflow run (e.g. env, AWS account etc)
-  env          = upper("dev")
+  env          = upper(var.env)
   aws_account  = "347295195503"
   storage_role = "ba-olympus-ecpsnowflake"
   repo         = "olympus-infr-adm-snowflake"
@@ -25,11 +29,11 @@ locals {
 }
 
 # --- these are purely for debugging ------------------------------------
-# output "account" { value = local.account }
-# output "all_accounts" { value = local.all_accounts }
-# output "warehouses" { value = local.warehouses }
-# output "databases" { value = local.databases }
-output "integrations" { value = local.integrations }
+# output "aws_account" { value = local.aws_account }
+# output "yaml_warehouses" { value = local.yaml.warehouses }
+output "warehouses" { value = local.warehouses }
+output "databases" { value = local.databases }
+# output "integrations" { value = local.integrations }
 # output "stages" { value = local.stages }
 output "service_user" { value = local.service_user }
 # -----------------------------------------------------------------------
@@ -38,6 +42,17 @@ output "service_user" { value = local.service_user }
 # now pretend to call the modules - unfortunately providers can't be chosen dynamically
 
 ### LONDON #########################################################
+
+# module "snowflake_roles_london" {
+#   source = "./modules/snowflake-roles"
+#   for_each = {
+#     for name, wh in local.warehouses : name => wh
+#     if contains(wh.accounts, "LONDON")
+#   }
+#   name      = each.key
+#   comment   = each.value.comment
+#   providers = { tfcoremock = tfcoremock.LONDON }
+# }
 
 module "snowflake_warehouse_london" {
   source = "./modules/snowflake-warehouse"

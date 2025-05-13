@@ -1,5 +1,5 @@
-# DATABASE - dummy module
-#  - creates a Snowflake database and changes its ownership
+# SNOWFLAKE-DATABASE - dummy module
+#  - creates a Snowflake database and changes it            s ownership
 #  - creates various schemas within that database (and changes their ownership)
 
 

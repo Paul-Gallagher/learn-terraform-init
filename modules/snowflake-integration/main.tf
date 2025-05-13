@@ -1,4 +1,4 @@
-# INTEGRATION - dummy module
+# SNOWFLAKE-INTEGRATION - dummy module
 #  - creates a Snowflake integration and changes its ownership
 
 

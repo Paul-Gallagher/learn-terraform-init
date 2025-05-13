@@ -37,43 +37,54 @@ Transformation:
 ### Snowflake config - why have the team chosen title-case?
 ###################################################################
 Snowflake:
-  account: IRELAND # this is the default
+  # account: IRELAND # this is the default
+
   service_user:
     name: MY_SERVICE_USER # gets an implicit _${env} suffix
     comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
+    account: LONDON
 
-  warehouse: # defaults to XSMALL
+  warehouse: # defaults to XSMALL with 1 cluster
     - name: WH_TEST1
+      size: MEDIUM
+      clusters: 1
+
+    - name: WH_TEST1
+      env: [UAT, PRD]
+      size: LARGE
       clusters: 4
 
-    - name: WH_TEST2
-      account: [LONDON, IRELAND]
-      comment: Warehouse for one-off large runs
-      size: XLARGE
+    # we can even change stuff across accounts - NOT YET 'cos code currently takes the last entry per name
+    - name: WH_TEST1
+      account: LONDON
+      comment: Special extra large warehouse for London
+      size: X-LARGE
 
   database:
     - name: DB_THING1 # gets an implicit _${env} suffix
-      # extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
+      extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
+      env: DEV
 
     - name: DB_THING2
-      account: [LONDON]
-      comment: Database for something special
+      account: [LONDON, IRELAND]
+      comment: Database for something special in London uat & production only
+      env: [UAT, PRD]
 
-  # these would create storage integrations
-  s3_integration:
-    - name: MY_INTEGRATION
-      allowed_locations:
-        - BA_OLYMPUS_${env}_CLEANED/
-        - BA_OLYMPUS_${env}_ALIGNED/
-        - BA_OLYMPUS_${env}_RAW/
-      # role always seems to be aws-account/ba-olympus-snowflake ?
+  # # these would create storage integrations
+  # s3_integration:
+  #   - name: MY_INTEGRATION
+  #     allowed_locations:
+  #       - BA_OLYMPUS_${env}_CLEANED/
+  #       - BA_OLYMPUS_${env}_ALIGNED/
+  #       - BA_OLYMPUS_${env}_RAW/
+  #     # role always seems to be aws-account/ba-olympus-snowflake ?
 
-  # # stage can only use allowed locations (only one of them?)
-  stage:
-    - name: MY_STAGE
-      location: BA_OLYMPUS_${env}_ALIGNED/
-      integration: MY_INTEGRATION
-      comment: Stage for something or other
+  # # # stage can only use allowed locations (only one of them?)
+  # stage:
+  #   - name: MY_STAGE
+  #     location: BA_OLYMPUS_${env}_ALIGNED/
+  #     integration: MY_INTEGRATION
+  #     comment: Stage for something or other
 
 ###################################################################
 ### Airflow config

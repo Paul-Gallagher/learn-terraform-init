@@ -6,6 +6,7 @@ terraform {
 
       # without this list we'd have tp add a providers.tf to each module sub-directory
       configuration_aliases = [
+        tfcoremock,
         tfcoremock.BANGKOK,
         tfcoremock.IRELAND,
         tfcoremock.LONDON,
