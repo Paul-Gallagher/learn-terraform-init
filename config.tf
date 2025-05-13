@@ -54,25 +54,26 @@ locals {
   # A later addition to allow differences between accounts added extra complexity
   # In the end I broke it down into two steps for a bit of extra legibility
 
+  # Step 1: Filter warehouse entries and add default values
   filtered_warehouses = [
-    # this loop uses the ellipsis operator (...) to group all warehouses with the same name
-    # it has a filter to include only entries for the current environment
-    for wh in local.yaml.warehouses : {
-      # create a composite key that includes both name and account
-      key               = "${lookup(wh, "name", "")}_${lookup(wh, "account", local.snowflake_account)}"
+    for wh in local.yaml.warehouses :
+    {
       name              = lookup(wh, "name", "")
+      account           = upper(lookup(wh, "account", local.default_account))
       size              = lookup(wh, "size", local.default_wh_size)
       max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
       comment           = lookup(wh, "comment", "Created by ${local.repo}")
-      account           = lookup(wh, "account", local.snowflake_account)
+      env               = lookup(wh, "env", [local.env]) # don't need this except for debugging
+
     }
+    # filter to include only entries for the current environment
     if contains(
-      # convert the env entry to a list if it's given as a string
+      # cConvert env entry to a list if it's given as a string
       [for e in(
         try(
-          # try to access it as a list - which will fail if it's a string
+          # try to access as a list - will fail if it's a string
           tolist(lookup(wh, "env", [local.env])),
-          # fallback - treat as a string and wrap in a list (quacks like one anyway)
+          # fallback - treat as a string and wrap in a list
           [lookup(wh, "env", local.env)]
         )
       ) : upper(e)],
@@ -80,17 +81,25 @@ locals {
     )
   ]
 
-  warehouses = {
-    for item in local.filtered_warehouses : item.key => {
-      # extract just the properties we need
-      name              = item.name
-      size              = item.size
-      max_cluster_count = item.max_cluster_count
-      comment           = item.comment
-      account           = item.account
-    }
+  # Step 2: Group by name and account - giving us a map of maps, with name_account as the key
+  grouped_warehouses = {
+    # create a composite key from name and account, the ellipsis(...) groups entries with the same key
+    for entry in local.filtered_warehouses :
+    "${entry.name}_${entry.account}" => entry...
   }
 
+  # Step 3: Finally, take the last entry for each group (eg someone mistakenly misses an environment definition)
+  warehouses = {
+    for key, entries in local.grouped_warehouses :
+    key => {
+      # take the last entry in each group (most recent definition in the yaml)
+      name              = entries[length(entries) - 1].name
+      size              = entries[length(entries) - 1].size
+      max_cluster_count = entries[length(entries) - 1].max_cluster_count
+      comment           = entries[length(entries) - 1].comment
+      account           = entries[length(entries) - 1].account
+    }
+  }
   # jump thru similar loops for the other resource types
 
   databases = {

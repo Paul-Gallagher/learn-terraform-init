@@ -40,22 +40,25 @@ Snowflake:
   # account: IRELAND # this is the default
 
   service_user:
+    # TODO: make this a list just so the yaml schema is consistent with the other types
     name: MY_SERVICE_USER # gets an implicit _${env} suffix
     comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
     account: LONDON
 
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
+      # env: ${env} - implicit default of the environment we're deploying to
       size: MEDIUM
 
     - name: WH_TEST1
-      env: [UAT, PRD]
+      env: [UAT, PRD] # only deploy to these enviromnants (case insensitive)
       size: LARGE
       clusters: 2
 
-    # we can even change stuff across accounts - NOT YET 'cos code currently takes the last entry per name
+    # can even change parameters across Snowflake accounts
     - name: WH_TEST1
-      account: LONDON
+      account: London # demonstrating single entry as a string and case insensitivity
+      env: dEV # for both account and env
       comment: Special extra large warehouse for London
       size: X-LARGE
       clusters: 3

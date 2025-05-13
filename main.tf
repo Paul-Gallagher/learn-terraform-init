@@ -32,7 +32,8 @@ locals {
 # --- these are purely for debugging ------------------------------------
 # output "aws_account" { value = local.aws_account }
 # output "yaml_warehouses" { value = local.yaml.warehouses }
-# output "filtered_warehouses" { value = local.filtered_warehouses }
+output "filtered_warehouses" { value = local.filtered_warehouses }
+output "grouped_warehouses" { value = local.grouped_warehouses }
 output "warehouses" { value = local.warehouses }
 output "databases" { value = local.databases }
 # output "integrations" { value = local.integrations }
@@ -60,7 +61,6 @@ module "snowflake_warehouse_london" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    # if contains(wh.accounts, "LONDON")
     if wh.account == "LONDON"
   }
   name              = each.key
@@ -120,7 +120,6 @@ module "snowflake_warehouse_ireland" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    # if contains(wh.accounts, "IRELAND")
     if wh.account == "IRELAND"
   }
   name              = each.key
