@@ -156,13 +156,4 @@ module "snowflake_stage_ireland" {
 # print put the resources we whoul have created
 # terraform show -json | jq ".values.root_module.child_modules[].resources[].values.input | fromjson"
 
-# also printing out the resource address is icky
-# terraform show -json | jq ".values.root_module.child_modules[].resources[] | {address: .address, properties: (.values.input | fromjson)}"
-# terraform show -json | jq ".values.root_module.child_modules[].resources[] | {address: .address, properties: (.values.input | fromjson)}"
-#
-# secrets
-# airflow/connections/snowflake_secure_comm_loy_ba_members_conn
-#   snowflake://AIRFLOW_SECURE_IAGL_LOY_CCD_DEV:m0SdJ%7B%5E%5E0%7B%23%3E%3BuNJp%7Drn@url.com:443?account=ba&region=eu-west-1&private_key_content=-----BEGIN+ENCRYPTED+PRIVATE+KEY-----...-----END+ENCRYPTED+PRIVATE+KEY-----
-#
-# airflow/connections/snowflake_cust_loy_ba_members_secure_conn
-#  snowflake://AIRFLOW_CUST_LOY_BA_MEMBERS_SECURE_DEV:5_u%3C%7C38_R%233I6_bvb%2ABe@url.com:443?account=ba&region=eu-west-1&private_key_content=-----BEGIN+ENCRYPTED+PRIVATE+KEY----- ...-----END+ENCRYPTED+PRIVATE+KEY-----
+# see x-cmd.log
