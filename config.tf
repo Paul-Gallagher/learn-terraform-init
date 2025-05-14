@@ -1,6 +1,10 @@
 # Parses our data project's config.yaml file and extracts the Snowflake section 
 #
-# It then enhances each section with defaults - such as Snowflake account or warehouse size
+# Transform and enhance each resource section 
+#  - add defaults - such as Snowflake account or warehouse size
+#  - filter out unwanted environments
+#  - deal with multiple environments and multiple Snowflake accounts
+#
 # Finally some rudimentary checks are run - eg that each resource has a name
 
 locals {
@@ -59,12 +63,17 @@ locals {
     for wh in local.yaml.warehouses :
     {
       name              = lookup(wh, "name", "")
-      account           = upper(lookup(wh, "account", local.default_account))
-      size              = lookup(wh, "size", local.default_wh_size)
+      size              = upper(lookup(wh, "size", local.default_wh_size))
       max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
       comment           = lookup(wh, "comment", "Created by ${local.repo}")
       env               = lookup(wh, "env", [local.env]) # don't need this except for debugging
-
+      # convert account to an uppercase comma separated string (simplifies the next step)
+      accounts = try(
+        # if it's already a string, use it directly
+        tostring(lookup(wh, "account", local.default_account)),
+        # if it's a list, join it with commas
+        join(",", [for a in lookup(wh, "account", [local.default_account]) : upper(a)])
+      )
     }
     # filter to include only entries for the current environment
     if contains(
@@ -83,9 +92,18 @@ locals {
 
   # Step 2: Group by name and account - giving us a map of maps, with name_account as the key
   grouped_warehouses = {
-    # create a composite key from name and account, the ellipsis(...) groups entries with the same key
-    for entry in local.filtered_warehouses :
-    "${entry.name}_${entry.account}" => entry...
+    for item in flatten([
+      for entry in local.filtered_warehouses : [
+        for account in split(",", entry.accounts) : { # here's our comma-separated accounts (see above)
+          key               = "${entry.name}_${account}"
+          name              = entry.name
+          size              = entry.size
+          max_cluster_count = entry.max_cluster_count
+          comment           = entry.comment
+          account           = account
+        }
+      ]
+    ]) : item.key => item...
   }
 
   # Step 3: Finally, take the last entry for each group (eg someone mistakenly misses an environment definition)
@@ -100,7 +118,8 @@ locals {
       account           = entries[length(entries) - 1].account
     }
   }
-  # jump thru similar loops for the other resource types
+
+  # jump thru similar loops for the other resource types - no obvious way of DRY-ing this up
 
   databases = {
     # see walkthru of warehouses above

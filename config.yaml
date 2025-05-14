@@ -51,16 +51,16 @@ Snowflake:
       size: MEDIUM
 
     - name: WH_TEST1
-      env: [UAT, PRD] # only deploy to these enviromnants (case insensitive)
+      env: [UAT, PRD] # only deploy to these enviromnants
       size: LARGE
       clusters: 2
 
     # can even change parameters across Snowflake accounts
     - name: WH_TEST1
-      account: London # demonstrating single entry as a string and case insensitivity
-      env: dEV # for both account and env
+      account: [london, Bangkok] # demonstrating case insensitivity
+      env: dEV # demonstrating single values as a string and case-insensitivity
+      size: x-large # demonstrating case insensitivity
       comment: Special extra large warehouse for London
-      size: X-LARGE
       clusters: 3
 
   database:
