@@ -10,12 +10,12 @@
 
 # from gihub workflow
 variable "env" { default = "dev" }
+variable "location" { default = "BA_IRELAND" }
 variable "repo" { default = "olympus-infr-adm-snowflake" }
 variable "aws_account" { default = "347295195503" }
 
 locals {
   # some values will be passed in from the Github workflow run (e.g. env, AWS account etc)
-  env          = upper(var.env)
   aws_account  = var.aws_account # avoid having to remember when to use var. and when local.
   repo         = var.repo
   storage_role = "ba-olympus-ecpsnowflake"
@@ -63,7 +63,7 @@ module "snowflake_database_ba_london" {
   source = "./modules/snowflake-database"
   for_each = {
     for name, db in local.databases : name => db
-    if contains(db.locations, "BA_LONDON")
+    if db.location == "BA_LONDON"
   }
   name          = each.key
   extra_schemas = each.value.extra_schemas
@@ -86,19 +86,19 @@ module "snowflake_integration_ba_london" {
   providers         = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
-module "snowflake_stage_ba_london" {
-  source = "./modules/snowflake-stage"
-  for_each = {
-    for name, st in local.stages : name => st
-    if contains(st.locations, "BA_LONDON")
-  }
-  name        = each.key
-  location    = each.value.location
-  integration = each.value.integration
-  comment     = each.value.comment
-  owner       = local.owner
-  providers   = { tfcoremock = tfcoremock.BA_LONDON }
-}
+# module "snowflake_stage_ba_london" {
+#   source = "./modules/snowflake-stage"
+#   for_each = {
+#     for name, st in local.stages : name => st
+#     if contains(st.locations, "BA_LONDON")
+#   }
+#   name        = each.key
+#   location    = each.value.location
+#   integration = each.value.integration
+#   comment     = each.value.comment
+#   owner       = local.owner
+#   providers   = { tfcoremock = tfcoremock.BA_LONDON }
+# }
 
 
 ### BA_IRELAND #########################################################
@@ -118,12 +118,11 @@ module "snowflake_warehouse_ba_ireland" {
 }
 
 module "snowflake_database_ba_ireland" {
-  #   source = "git@github.com:BritishAirways-Ent/olympus-infr-adm-snowflake/src/terraform/modules/snowflake-database?ref=main"
   source = "./modules/snowflake-database"
 
   for_each = {
     for name, db in local.databases : name => db
-    if contains(db.locations, "BA_IRELAND")
+    if db.location == "BA_IRELAND"
   }
   name          = each.key
   extra_schemas = each.value.extra_schemas
@@ -146,19 +145,19 @@ module "snowflake_integration_ba_ireland" {
   providers         = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
-module "snowflake_stage_ba_ireland" {
-  source = "./modules/snowflake-stage"
-  for_each = {
-    for name, st in local.stages : name => st
-    if contains(st.locations, "BA_IRELAND")
-  }
-  name        = each.key
-  location    = each.value.location
-  integration = each.value.integration
-  comment     = each.value.comment
-  owner       = local.owner
-  providers   = { tfcoremock = tfcoremock.BA_IRELAND }
-}
+# module "snowflake_stage_ba_ireland" {
+#   source = "./modules/snowflake-stage"
+#   for_each = {
+#     for name, st in local.stages : name => st
+#     if contains(st.locations, "BA_IRELAND")
+#   }
+#   name        = each.key
+#   location    = each.value.location
+#   integration = each.value.integration
+#   comment     = each.value.comment
+#   owner       = local.owner
+#   providers   = { tfcoremock = tfcoremock.BA_IRELAND }
+# }
 
 
 # terraform state list module.snowflake_warehouse

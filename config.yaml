@@ -37,7 +37,8 @@ Transformation:
 ### Snowflake config - why have the team chosen title-case?
 ###################################################################
 Snowflake:
-  # location: BA_IRELAND # this is the default
+  # env: ${env}           # implicit default of the environment we're deploying to
+  # location: BA_IRELAND  # our default Snowflake instance
 
   service_user:
     - name: MY_SERVICE_USER # NOTE: gets an implicit _${env} suffix
@@ -46,7 +47,6 @@ Snowflake:
 
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
-      # env: ${env} - implicit default of the environment we're deploying to
       size: MEDIUM
 
     - name: WH_TEST1
@@ -72,21 +72,22 @@ Snowflake:
       comment: Database for something special in London uat & production only
       env: [UAT, PRD]
 
-  # # these would create storage integrations
-  # s3_integration:
-  #   - name: MY_INTEGRATION # NOTE: gets an implicit _${env} suffix
-  #     allowed_locations:
-  #       - BA_OLYMPUS_${env}_CLEANED/
-  #       - BA_OLYMPUS_${env}_ALIGNED/
-  #       - BA_OLYMPUS_${env}_RAW/
-  #     # role always seems to be aws-location/ba-olympus-snowflake ?
+  # these create S3 storage integrations and external stage(s)
+  # role always seems to be aws-location/ba-olympus-snowflake ?
+  integration:
+    - name: MY_INTEGRATION # NOTE: gets an implicit _${env} suffix
+      allowed_locations:
+        - BA_OLYMPUS_${env}_CLEANED/
+        - BA_OLYMPUS_${env}_ALIGNED/
+        - BA_OLYMPUS_${env}_RAW/
+      stages:
+        - name: MY_STAGE1 # NOTE: gets an implicit _${env} suffix
+          location: BA_OLYMPUS_${env}_ALIGNED/ # has to be one of the allowed ones ?
+          comment: Stage for something or other
 
-  # # # stage can only use allowed locations (only one of them?)
-  # stage:
-  #   - name: MY_STAGE # NOTE: gets an implicit _${env} suffix
-  #     location: BA_OLYMPUS_${env}_ALIGNED/
-  #     integration: MY_INTEGRATION
-  #     comment: Stage for something or other
+        - name: MY_STAGE2
+          location: BA_OLYMPUS_${env}_RAW/
+          comment: Stage for something or other
 
 ###################################################################
 ### Airflow config

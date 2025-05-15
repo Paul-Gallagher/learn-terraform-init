@@ -9,11 +9,13 @@ SubjectAreaCode: PLO
 Purpose: Description of what this data product does
 
 Snowflake:
+  # env: ${env}           # implicit default of the environment we're deploying to
+  # location: BA_IRELAND  # our default Snowflake instance
+
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
       env: [dev, int, uat]
       # size: x-small          # the default
-      # location: ba_ireland    # the default
       comment: Small single-cluster in Ireland for sub-live
 
     - name: WH_TEST1
