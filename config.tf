@@ -42,7 +42,7 @@ locals {
   # decode the yaml and pull out the Snowflake section - if it exists
   raw_yaml = try(yamldecode(local.cooked_content).Snowflake, null)
 
-  # do we have a Snowflake location override section - this is a key into Secrets Manager (?)
+  # do we have a Snowflake location override section
   resource_location = try(local.raw_yaml.location, local.default_location)
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists

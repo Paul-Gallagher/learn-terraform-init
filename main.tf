@@ -76,7 +76,7 @@ module "snowflake_integration_ba_london" {
   source = "./modules/snowflake-integration"
   for_each = {
     for name, ig in local.integrations : name => ig
-    if contains(ig.locations, "BA_LONDON")
+    if ig.location == "BA_LONDON"
   }
   name              = each.key
   allowed_locations = each.value.allowed_locations
@@ -135,7 +135,7 @@ module "snowflake_integration_ba_ireland" {
   source = "./modules/snowflake-integration"
   for_each = {
     for name, ig in local.integrations : name => ig
-    if contains(ig.locations, "BA_IRELAND")
+    if ig.location == "BA_IRELAND"
   }
   name              = each.key
   allowed_locations = each.value.allowed_locations

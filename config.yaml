@@ -76,6 +76,7 @@ Snowflake:
   # role always seems to be aws-location/ba-olympus-snowflake ?
   integration:
     - name: MY_INTEGRATION # NOTE: gets an implicit _${env} suffix
+      env: uat
       allowed_locations:
         - BA_OLYMPUS_${env}_CLEANED/
         - BA_OLYMPUS_${env}_ALIGNED/
