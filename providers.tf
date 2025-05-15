@@ -7,9 +7,9 @@ terraform {
       # without this list we'd have tp add a providers.tf to each module sub-directory
       configuration_aliases = [
         tfcoremock,
-        tfcoremock.BANGKOK,
-        tfcoremock.IRELAND,
-        tfcoremock.LONDON,
+        tfcoremock.BA_BANGKOK,
+        tfcoremock.BA_IRELAND,
+        tfcoremock.BA_LONDON,
       ]
     }
   }
@@ -22,13 +22,13 @@ provider "tfcoremock" {
 
 # define separate provider aliases for each Snowflake account - these inherit from the bseline configuration
 provider "tfcoremock" {
-  alias = "LONDON" # London-specific connection parameters - from environment variables
+  alias = "BA_LONDON" # London-specific connection parameters - from environment variables
 }
 provider "tfcoremock" {
-  alias = "IRELAND" # Ireland-specific connection parameters
+  alias = "BA_IRELAND" # Ireland-specific connection parameters
 }
 provider "tfcoremock" {
-  alias = "BANGKOK" # Bangkok-specific connection parameters
+  alias = "BA_BANGKOK" # Bangkok-specific connection parameters
 }
 
 

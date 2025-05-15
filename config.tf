@@ -1,40 +1,52 @@
-# Parses our data project's config.yaml file and extracts the Snowflake section 
+####################################################################################
+# Parse, transform and validate the Snowflake section in a [config.yaml] file
 #
-# Transform and enhance each resource section 
-#  - add defaults - such as Snowflake account or warehouse size
+# Input: name of the configuration file - default is config.yaml
+# Output: a map of maps for each resource type (warehouses, databases, etc)
+#
+# Overview: Transform and enhance each resource sub-section
+#  - add defaults - such as Snowflake location or warehouse size
 #  - filter out unwanted environments
-#  - deal with multiple environments and multiple Snowflake accounts
+#  - deal with multiple environments, multiple Snowflake locations and case insensitivity
+#  - build a tags map from yaml outside the SSnowflake section
+#  - run some rudimentary checks - eg each resource has a name
 #
-# Finally some rudimentary checks are run - eg that each resource has a name
+# Example uses: terraform apply -auto-approve
+#               terraform apply -auto-approve -var env=uat -var config=demo.yaml
+#
+# Notes: valid locations and defaults should come from some central location
+####################################################################################
+
+variable "config" { default = "config.yaml" }
+variable "locations" { default = ["BA_IRELAND", "BA_LONDON", "BA_BANGKOK"] }
 
 locals {
-
   # constants
-  default_account = "IRELAND"
-  default_wh_size = "XSMALL"
-  defaut_clusters = 1
-  default_comment = "Created by ${local.repo}"
+  default_location = var.locations[0]
+  default_wh_size  = "XSMALL"
+  defaut_clusters  = 1
+  default_comment  = "Created by ${local.repo}"
 
 
-  # first read the file as a plain string
-  raw_content = file("${path.module}/config.yaml")
+  # first read the configuration file as a plain string
+  raw_content = file("${path.module}/${var.config}")
 
-  # run our string interpolations - e.g. replace ${env} with the actual env name
+  # run any string interpolation(s) - e.g. replace ${env} with the actual env name
   cooked_content = replace(local.raw_content, "$${env}", local.env)
 
-  # now decode the yaml an pull out the Snowflake section - if it exists
+  # decode the yaml and pull out the Snowflake section - if it exists
   raw_yaml = try(yamldecode(local.cooked_content).Snowflake, null)
 
-  # do we have a Snowflake account override section - this is a key into Secrets Manager (?)
-  snowflake_account = try(local.raw_yaml.account, local.default_account)
+  # do we have a Snowflake location override section - this is a key into Secrets Manager (?)
+  resource_location = try(local.raw_yaml.location, local.default_location)
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists
   yaml = {
-    warehouses   = try(local.raw_yaml.warehouse, [])
-    databases    = try(local.raw_yaml.database, [])
-    integrations = try(local.raw_yaml.s3_integration, [])
-    stages       = try(local.raw_yaml.stage, [])
-    service_user = try(local.raw_yaml.service_user, "")
+    warehouses    = try(local.raw_yaml.warehouse, {})
+    databases     = try(local.raw_yaml.database, {})
+    integrations  = try(local.raw_yaml.s3_integration, {})
+    stages        = try(local.raw_yaml.stage, {})
+    service_users = try(local.raw_yaml.service_user, {})
   }
 
   # now transform each section
@@ -44,10 +56,10 @@ locals {
   #   warehouses = {
   #     for wh in local.yaml.warehouses :
   #     lookup(wh, "name", "") => {
-  #       size              = lookup(wh, "size", local.default_wh_size)
-  #       max_cluster_count = lookup(wh, "clusters", local.default_clusters)
-  #       comment           = lookup(wh, "comment", local.default_comment)
-  #       account           = lookup(wh, "account", local.snowflake_account)
+  #       size               = lookup(wh, "size", local.default_wh_size)
+  #       max_cluster_count  = lookup(wh, "clusters", local.default_clusters)
+  #       comment            = lookup(wh, "comment", local.default_comment)
+  #       location           = lookup(wh, "location", local.resource_location)
   #     }
   #     if contains(lookup(wh, "env", [local.env]), local.env)
   #   }
@@ -55,7 +67,7 @@ locals {
   # Normally, expect items with the SAME name to be for different environments
   # This more complex version deals with edge cases where this is not the case (eg user error)
   # This version also allows singe-value lists to be specified by a string
-  # A later addition to allow differences between accounts added extra complexity
+  # A later addition to allow differences between locations added extra complexity
   # In the end I broke it down into two steps for a bit of extra legibility
 
   # Step 1: Filter warehouse entries and add default values
@@ -67,17 +79,17 @@ locals {
       max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
       comment           = lookup(wh, "comment", "Created by ${local.repo}")
       env               = lookup(wh, "env", [local.env]) # don't need this except for debugging
-      # convert account to an uppercase comma separated string (simplifies the next step)
-      accounts = try(
+      # convert location to an uppercase comma separated string (simplifies the next step)
+      locations = try(
         # if it's already a string, use it directly
-        tostring(lookup(wh, "account", local.default_account)),
+        upper(tostring(lookup(wh, "location", local.default_location))),
         # if it's a list, join it with commas
-        join(",", [for a in lookup(wh, "account", [local.default_account]) : upper(a)])
+        join(",", [for a in lookup(wh, "location", [local.default_location]) : upper(a)])
       )
     }
     # filter to include only entries for the current environment
     if contains(
-      # cConvert env entry to a list if it's given as a string
+      # convert env entry to a list if it's given as a string
       [for e in(
         try(
           # try to access as a list - will fail if it's a string
@@ -90,17 +102,17 @@ locals {
     )
   ]
 
-  # Step 2: Group by name and account - giving us a map of maps, with name_account as the key
+  # Step 2: Group by name and location - giving us a map of maps, with name_location as the key
   grouped_warehouses = {
     for item in flatten([
       for entry in local.filtered_warehouses : [
-        for account in split(",", entry.accounts) : { # here's our comma-separated accounts (see above)
-          key               = "${entry.name}_${account}"
+        for location in split(",", entry.locations) : { # here's our comma-separated locations (see above)
+          key               = "${entry.name}_${location}"
           name              = entry.name
           size              = entry.size
           max_cluster_count = entry.max_cluster_count
           comment           = entry.comment
-          account           = account
+          location          = location
         }
       ]
     ]) : item.key => item...
@@ -115,7 +127,7 @@ locals {
       size              = entries[length(entries) - 1].size
       max_cluster_count = entries[length(entries) - 1].max_cluster_count
       comment           = entries[length(entries) - 1].comment
-      account           = entries[length(entries) - 1].account
+      location          = entries[length(entries) - 1].location
     }
   }
 
@@ -140,10 +152,10 @@ locals {
     can(name) ? "${name}_${local.env}" : "" => {
       extra_schemas = lookup(db_list[length(db_list) - 1], "extra_schemas", [])
       comment       = lookup(db_list[length(db_list) - 1], "comment", "Created by ${local.repo}")
-      accounts      = lookup(db_list[length(db_list) - 1], "account", [local.snowflake_account])
-      accounts = try(
-        tolist(lookup(db_list[length(db_list) - 1], "account", [local.snowflake_account])),
-        [lookup(db_list[length(db_list) - 1], "account", local.snowflake_account)]
+      locations     = lookup(db_list[length(db_list) - 1], "location", [local.resource_location])
+      locations = try(
+        tolist(lookup(db_list[length(db_list) - 1], "location", [local.resource_location])),
+        [lookup(db_list[length(db_list) - 1], "location", local.resource_location)]
       )
     }
   }
@@ -153,8 +165,8 @@ locals {
       allowed_locations = [
         for loc in ig.allowed_locations : loc
       ]
-      comment  = lookup(ig, "comment", "Created by ${local.repo}")
-      accounts = lookup(ig, "account", [local.snowflake_account])
+      comment   = lookup(ig, "comment", "Created by ${local.repo}")
+      locations = lookup(ig, "location", [local.resource_location])
     }
   }
   stages = {
@@ -163,25 +175,26 @@ locals {
       location    = sg.location
       integration = sg.integration
       comment     = lookup(sg, "comment", "Created by ${local.repo}")
-      accounts    = lookup(sg, "account", [local.snowflake_account])
+      locations   = lookup(sg, "location", [local.resource_location])
     }
   }
-  service_user = {
-    name     = can(local.yaml.service_user) ? "${local.yaml.service_user.name}_${local.env}" : ""
-    comment  = lookup(local.yaml.service_user, "comment", "Created by ${local.repo}")
-    accounts = lookup(local.yaml.service_user, "account", [local.snowflake_account])
+  service_users = { #
+    for su in local.yaml.service_users :
+    can(su.name) ? "${su.name}_${local.env}" : "" => {
+      comment   = lookup(su, "comment", "Created by ${local.repo}")
+      locations = lookup(su, "location", [local.resource_location])
+    }
   }
-
 }
 
 # run some validation checks
 resource "terraform_data" "validate_sections" {
   input = {
-    warehouses   = local.warehouses
-    databases    = local.databases
-    integrations = local.integrations
-    stages       = local.stages
-    service_user = local.service_user
+    warehouses    = local.warehouses
+    databases     = local.databases
+    integrations  = local.integrations
+    stages        = local.stages
+    service_users = local.service_users
   }
 
   lifecycle {
@@ -202,15 +215,26 @@ resource "terraform_data" "validate_sections" {
       error_message = "ERROR: All stages must have a name - please check config.yml"
     }
     precondition {
-      condition     = local.service_user.name != ""
+      condition     = alltrue([for name, _ in local.service_users : name != ""])
       error_message = "ERROR: service_user must have a name - please check config.yml"
     }
   }
 
 }
 
-# useful for debugging - show the transformed yaml
+# --- these are purely for debugging ------------------------------------
+
 # output "validation_inputs" {
 #   description = "Transformed yaml as passed to the validation checks"
 #   value       = terraform_data.validate_sections.input
 # }
+
+# output "aws_account" { value = local.aws_account }
+# output "yaml_warehouses" { value = local.yaml.warehouses }
+output "filtered_warehouses" { value = local.filtered_warehouses }
+output "grouped_warehouses" { value = local.grouped_warehouses }
+output "warehouses" { value = local.warehouses }
+output "databases" { value = local.databases }
+# output "integrations" { value = local.integrations }
+# output "stages" { value = local.stages }
+output "service_users" { value = local.service_users }

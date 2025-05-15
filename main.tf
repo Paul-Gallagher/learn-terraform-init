@@ -29,148 +29,135 @@ locals {
   # see config.tf which parses config.yaml and sets un various maps (eg warehouses, databases, etc
 }
 
-# --- these are purely for debugging ------------------------------------
-# output "aws_account" { value = local.aws_account }
-# output "yaml_warehouses" { value = local.yaml.warehouses }
-output "filtered_warehouses" { value = local.filtered_warehouses }
-output "grouped_warehouses" { value = local.grouped_warehouses }
-output "warehouses" { value = local.warehouses }
-output "databases" { value = local.databases }
-# output "integrations" { value = local.integrations }
-# output "stages" { value = local.stages }
-output "service_user" { value = local.service_user }
-# -----------------------------------------------------------------------
-
-
 # now pretend to call the modules - unfortunately providers can't be chosen dynamically
 
-### LONDON #########################################################
+### BA_LONDON #########################################################
 
 # module "snowflake_roles_london" {
 #   source = "./modules/snowflake-roles"
 #   for_each = {
 #     for name, wh in local.warehouses : name => wh
-#     if contains(wh.accounts, "LONDON")
+#     if contains(wh.locations, "BA_LONDON")
 #   }
 #   name      = each.key
 #   comment   = each.value.comment
-#   providers = { tfcoremock = tfcoremock.LONDON }
+#   providers = { tfcoremock = tfcoremock.BA_LONDON }
 # }
 
-module "snowflake_warehouse_london" {
+module "snowflake_warehouse_ba_london" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    if wh.account == "LONDON"
+    if wh.location == "BA_LONDON"
   }
   name              = each.key
   size              = each.value.size
   max_cluster_count = each.value.max_cluster_count
   comment           = each.value.comment
   owner             = local.owner
-  providers         = { tfcoremock = tfcoremock.LONDON }
+  providers         = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
-module "snowflake_database_london" {
+module "snowflake_database_ba_london" {
   #   source = "git@github.com:BritishAirways-Ent/olympus-infr-adm-snowflake/src/terraform/modules/snowflake-database?ref=main"
   source = "./modules/snowflake-database"
   for_each = {
     for name, db in local.databases : name => db
-    if contains(db.accounts, "LONDON")
+    if contains(db.locations, "BA_LONDON")
   }
   name          = each.key
   extra_schemas = each.value.extra_schemas
   comment       = each.value.comment
   owner         = local.owner
-  providers     = { tfcoremock = tfcoremock.LONDON }
+  providers     = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
-module "snowflake_integration_london" {
+module "snowflake_integration_ba_london" {
   source = "./modules/snowflake-integration"
   for_each = {
     for name, ig in local.integrations : name => ig
-    if contains(ig.accounts, "LONDON")
+    if contains(ig.locations, "BA_LONDON")
   }
   name              = each.key
   allowed_locations = each.value.allowed_locations
   comment           = each.value.comment
   owner             = local.owner
   storage_role_arn  = local.storage_role_arn
-  providers         = { tfcoremock = tfcoremock.LONDON }
+  providers         = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
-module "snowflake_stage_london" {
+module "snowflake_stage_ba_london" {
   source = "./modules/snowflake-stage"
   for_each = {
     for name, st in local.stages : name => st
-    if contains(st.accounts, "LONDON")
+    if contains(st.locations, "BA_LONDON")
   }
   name        = each.key
   location    = each.value.location
   integration = each.value.integration
   comment     = each.value.comment
   owner       = local.owner
-  providers   = { tfcoremock = tfcoremock.LONDON }
+  providers   = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
 
-### IRELAND #########################################################
+### BA_IRELAND #########################################################
 
-module "snowflake_warehouse_ireland" {
+module "snowflake_warehouse_ba_ireland" {
   source = "./modules/snowflake-warehouse"
   for_each = {
     for name, wh in local.warehouses : name => wh
-    if wh.account == "IRELAND"
+    if wh.location == "BA_IRELAND"
   }
   name              = each.key
   size              = each.value.size
   max_cluster_count = each.value.max_cluster_count
   comment           = each.value.comment
   owner             = local.owner
-  providers         = { tfcoremock = tfcoremock.IRELAND }
+  providers         = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
-module "snowflake_database_ireland" {
+module "snowflake_database_ba_ireland" {
   #   source = "git@github.com:BritishAirways-Ent/olympus-infr-adm-snowflake/src/terraform/modules/snowflake-database?ref=main"
   source = "./modules/snowflake-database"
 
   for_each = {
     for name, db in local.databases : name => db
-    if contains(db.accounts, "IRELAND")
+    if contains(db.locations, "BA_IRELAND")
   }
   name          = each.key
   extra_schemas = each.value.extra_schemas
   comment       = each.value.comment
   owner         = local.owner
-  providers     = { tfcoremock = tfcoremock.IRELAND }
+  providers     = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
-module "snowflake_integration_ireland" {
+module "snowflake_integration_ba_ireland" {
   source = "./modules/snowflake-integration"
   for_each = {
     for name, ig in local.integrations : name => ig
-    if contains(ig.accounts, "IRELAND")
+    if contains(ig.locations, "BA_IRELAND")
   }
   name              = each.key
   allowed_locations = each.value.allowed_locations
   comment           = each.value.comment
   owner             = local.owner
   storage_role_arn  = local.storage_role_arn
-  providers         = { tfcoremock = tfcoremock.IRELAND }
+  providers         = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
-module "snowflake_stage_ireland" {
+module "snowflake_stage_ba_ireland" {
   source = "./modules/snowflake-stage"
   for_each = {
     for name, st in local.stages : name => st
-    if contains(st.accounts, "IRELAND")
+    if contains(st.locations, "BA_IRELAND")
   }
   name        = each.key
   location    = each.value.location
   integration = each.value.integration
   comment     = each.value.comment
   owner       = local.owner
-  providers   = { tfcoremock = tfcoremock.IRELAND }
+  providers   = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
 

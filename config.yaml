@@ -37,13 +37,12 @@ Transformation:
 ### Snowflake config - why have the team chosen title-case?
 ###################################################################
 Snowflake:
-  # account: IRELAND # this is the default
+  # location: BA_IRELAND # this is the default
 
   service_user:
-    # TODO: make this a list just so the yaml schema is consistent with the other types
-    name: MY_SERVICE_USER # gets an implicit _${env} suffix
-    comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
-    account: LONDON
+    - name: MY_SERVICE_USER # NOTE: gets an implicit _${env} suffix
+      comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
+      location: BA_LONDON
 
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
@@ -51,40 +50,40 @@ Snowflake:
       size: MEDIUM
 
     - name: WH_TEST1
-      env: [UAT, PRD] # only deploy to these enviromnants
+      env: [UAT, PRD] # only deploy to these environments
       size: LARGE
       clusters: 2
 
-    # can even change parameters across Snowflake accounts
+    # can even change parameters across Snowflake locations
     - name: WH_TEST1
-      account: [london, Bangkok] # demonstrating case insensitivity
+      location: [ba_london, ba_bangkok] # demonstrating case insensitivity
       env: dEV # demonstrating single values as a string and case-insensitivity
       size: x-large # demonstrating case insensitivity
       comment: Special extra large warehouse for London
       clusters: 3
 
   database:
-    - name: DB_THING1 # gets an implicit _${env} suffix
+    - name: DB_THING1 # NOTE: gets an implicit _${env} suffix
       extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
       env: DEV
 
     - name: DB_THING2
-      account: [LONDON, IRELAND]
+      location: [BA_LONDON, BA_IRELAND]
       comment: Database for something special in London uat & production only
       env: [UAT, PRD]
 
   # # these would create storage integrations
   # s3_integration:
-  #   - name: MY_INTEGRATION
+  #   - name: MY_INTEGRATION # NOTE: gets an implicit _${env} suffix
   #     allowed_locations:
   #       - BA_OLYMPUS_${env}_CLEANED/
   #       - BA_OLYMPUS_${env}_ALIGNED/
   #       - BA_OLYMPUS_${env}_RAW/
-  #     # role always seems to be aws-account/ba-olympus-snowflake ?
+  #     # role always seems to be aws-location/ba-olympus-snowflake ?
 
   # # # stage can only use allowed locations (only one of them?)
   # stage:
-  #   - name: MY_STAGE
+  #   - name: MY_STAGE # NOTE: gets an implicit _${env} suffix
   #     location: BA_OLYMPUS_${env}_ALIGNED/
   #     integration: MY_INTEGRATION
   #     comment: Stage for something or other
