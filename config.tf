@@ -17,16 +17,22 @@
 # Notes: valid locations and defaults should come from some central location
 ####################################################################################
 
+# needs these variables from elsewhere (eg defined in main.tf but set by Githyb workflow)
+# variable "env"      { type = string }  
+# variable "location" { type = string }
+# variable "repo"     { type = string }
+
+
 # allow changing the config file - useful during debugging
 variable "config" { default = "config.yaml" }
 
 
 locals {
-  # these two are defined in main.tf - they should come from Github
   env      = upper(var.env)
   location = upper(var.location)
+  repo     = upper(var.repo)
 
-  # constants - used as defaults
+  # constants - used as defaults - get these from elsewhere
   default_location = "BA_IRELAND"
   default_wh_size  = "XSMALL"
   defaut_clusters  = 1
@@ -42,7 +48,7 @@ locals {
   # decode the yaml and pull out the Snowflake section - if it exists
   raw_yaml = try(yamldecode(local.cooked_content).Snowflake, null)
 
-  # do we have a Snowflake location override section
+  # do we have root-level Snowflake location ooverride
   resource_location = try(local.raw_yaml.location, local.default_location)
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists
@@ -82,7 +88,7 @@ locals {
       name              = lookup(wh, "name", "")
       size              = upper(lookup(wh, "size", local.default_wh_size))
       max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
-      comment           = lookup(wh, "comment", "Created by ${local.repo}")
+      comment           = lookup(wh, "comment", "Created by ${var.repo}")
       env               = local.env
       location          = local.location
     }
@@ -269,7 +275,6 @@ resource "terraform_data" "validate_sections" {
 #   value       = terraform_data.validate_sections.input
 # }
 
-# output "aws_account" { value = local.aws_account }
 # output "yaml_warehouses" { value = local.yaml.warehouses }
 # output "filtered_warehouses" { value = local.filtered_warehouses }
 output "warehouses" { value = local.warehouses }

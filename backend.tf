@@ -3,5 +3,5 @@
 
 # locals{
 #     bucket = ""
-#     key = "${local.env}-${local.repo}-${local.account}"
+#     key = "${var.location}-${var.repo}"
 # }

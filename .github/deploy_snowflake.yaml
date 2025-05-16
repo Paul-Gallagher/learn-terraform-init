@@ -1,0 +1,63 @@
+# Stub to call the main _deploy_snowflake.yaml code in olympus-utils
+
+name: Deploy to Snowflake
+run-name: Deploy to Snowflake ${{ inputs.environment }} by @${{ github.actor }}
+on:
+  workflow_dispatch: #------------------------------------------------
+    inputs:
+      environment:
+        description: Target Environment
+        type: choice
+        options: [dev, int, uat, prd]
+        required: true
+        default: dev
+
+      playlist:
+        description: Playlist naming files to deploy
+        type: string
+        required: true
+        default: src/sql/snowflake/playlist
+
+      dryrun:
+        description: Dry run (log SQL but don't run it)
+        type: boolean
+        required: true
+        default: true
+
+      force:
+        description: 'Force creation of new tables (existing non-empty tables will be renamed)'
+        type: boolean
+        required: true
+        default: false
+
+#---------------------------------------------------------------------
+
+jobs:
+  # determine_utils_version:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     utils_version: ${{ steps.get-version.outputs.version }}
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
+
+  #     - name: Get utils version from file
+  #       id: get-version
+  #       run: echo "version=$(cat .github/.utils_version)" >> $GITHUB_OUTPUT
+
+  run_as_dba:
+    # needs: determine_utils_version
+    # dynamic branchs are not supported
+    # uses: BritishAirways-Ent/olympus-utils/.github/workflows/_deploy_snowflake.yaml@${{needs.determine_utils_version.outputs.utils_version}}
+    uses: BritishAirways-Ent/olympus-utils/.github/workflows/_deploy_snowflake.yaml@v6.31.0
+    with:
+      environment: ${{ github.event.inputs.environment }}
+      playlist: ${{ github.event.inputs.playlist }}
+      dryrun: ${{ fromJson(github.event.inputs.dryrun) }}
+      force: ${{ fromJson(github.event.inputs.force) }}
+    secrets:
+      AWS_ROLE: ${{ secrets.AWS_ROLE }}
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      PAT_GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_TOKEN }}
+      SNOWSQL_PRIVATE_KEY: ${{ secrets.SNOWSQL_ADMIN_PRIVATE_KEY }}
+      SNOWSQL_PRIVATE_KEY_PASSPHRASE: ${{ secrets.SNOWSQL_ADMIN_PRIVATE_KEY_PASSPHRASE }}

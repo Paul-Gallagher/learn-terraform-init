@@ -1,5 +1,5 @@
 ###################################################################
-### demo of alternate config file
+### terraform tests config file
 ###################################################################
 
 Snowflake:
@@ -8,13 +8,13 @@ Snowflake:
 
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
-      env: [dev, int, uat]
+      env: [dev, uat]
       # size: x-small          # the default
-      comment: Small single-cluster in Ireland for sub-live
+      comment: comment ireland
 
     - name: WH_TEST1
       env: prd
       location: ba_london
       size: large
       clusters: 2
-      comment: Large two-cluster in London for production
+      comment: comment london

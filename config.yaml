@@ -37,7 +37,7 @@ Transformation:
 ### Snowflake config - why have the team chosen title-case?
 ###################################################################
 Snowflake:
-  # env: ${env}           # implicit default of the environment we're deploying to
+  # env: ${env}           # implicitly the deployment environment
   # location: BA_IRELAND  # our default Snowflake instance
 
   service_user:
