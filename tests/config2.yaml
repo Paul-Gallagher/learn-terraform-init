@@ -1,0 +1,22 @@
+# config1.yaml - see warehouse2.tftest.hcl
+
+Snowflake:
+  env: dev
+  location: ba_london
+
+  warehouse: # defaults to single cluster XSMALL
+    - name: WH_TEST1
+      location: ba_ireland
+      comment: forced to Ireland only
+
+    - name: WH_TEST2
+      comment: London 2
+
+    - name: WH_TEST3
+      size: large
+      clusters: 2
+      comment: London 3
+
+    - name: WH_TEST4
+      env: prd
+      comment: forced to PRD only

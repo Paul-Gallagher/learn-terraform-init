@@ -1,6 +1,4 @@
-###################################################################
-### config_simple.yaml - terraform tests config file
-###################################################################
+# config1.yaml - see warehouse1.tftest.hcl
 
 Snowflake:
   # env: ${env}           # implicitly the deployment environment
@@ -9,8 +7,7 @@ Snowflake:
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
       env: [dev, uat]
-      # size: x-small          # the default
-      comment: ${env} Ireland
+      comment: dev and uat only
 
     - name: WH_TEST1
       env: prd

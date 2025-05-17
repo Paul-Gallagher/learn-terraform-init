@@ -47,8 +47,9 @@ locals {
   # decode the yaml and pull out the Snowflake section - if it exists
   raw_yaml = try(yamldecode(local.cooked_content).Snowflake, null)
 
-  # do we have root-level Snowflake location ooverride
-  resource_location = try(local.raw_yaml.location, local.default_location)
+  # do we have root-level env or location overrides - NB: env defaults to the run while location is fixed
+  root_env      = upper(try(local.raw_yaml.env, local.env))
+  root_location = upper(try(local.raw_yaml.location, local.default_location))
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists
   yaml = {
@@ -69,9 +70,9 @@ locals {
   #       size               = lookup(wh, "size", local.default_wh_size)
   #       max_cluster_count  = lookup(wh, "clusters", local.default_clusters)
   #       comment            = lookup(wh, "comment", local.default_comment)
-  #       location           = lookup(wh, "location", local.resource_location)
+  #       location           = lookup(wh, "location", local.root_location)
   #     }
-  #     if contains(lookup(wh, "env", [local.env]), local.env)
+  #     if contains(lookup(wh, "env", [local.root_env]), local.root_env)
   #   }
 
   # Normally, we'd expect items with the SAME name to be for different environments and locations
@@ -101,15 +102,17 @@ locals {
             # fallback - treat it as a string and wrap in a list
             [lookup(wh, "env", local.env)]
           )
-    ) : upper(e)], local.env)
+      ) : upper(e)],
+    local.env)
     && contains(
       [ # similar logic for location - allow it to be a list or a string
         for l in(
           try(
-            tolist(lookup(wh, "location", [local.resource_location])),
-            [lookup(wh, "location", local.resource_location)]
+            tolist(lookup(wh, "location", [local.root_location])),
+            [lookup(wh, "location", local.root_location)]
           )
-    ) : upper(l)], local.location)
+      ) : upper(l)],
+    local.location)
   ]
 
   # Step 2: Group warehouses by name and location and take the latest definition for each group
@@ -149,14 +152,14 @@ locals {
       try(
         tolist(lookup(db, "env", [local.env])),
         [lookup(db, "env", local.env)]
-      )
-    ) : upper(e)], local.env)
+      )) : upper(e)],
+    local.env)
     && contains([for l in(
       try(
-        tolist(lookup(db, "location", [local.resource_location])),
-        [lookup(db, "location", local.resource_location)]
-      )
-    ) : upper(l)], local.location)
+        tolist(lookup(db, "location", [local.location])),
+        [lookup(db, "location", local.location)]
+      )) : upper(l)],
+    local.location)
   ]
 
   databases = {
@@ -188,14 +191,14 @@ locals {
       try(
         tolist(lookup(ig, "env", [local.env])),
         [lookup(ig, "env", local.env)]
-      )
-    ) : upper(e)], local.env)
+      )) : upper(e)],
+    local.env)
     && contains([for l in(
       try(
-        tolist(lookup(ig, "location", [local.resource_location])),
-        [lookup(ig, "location", local.resource_location)]
-      )
-    ) : upper(l)], local.location)
+        tolist(lookup(ig, "location", [local.location])),
+        [lookup(ig, "location", local.location)]
+      )) : upper(l)],
+    local.location)
   ]
 
 
@@ -215,19 +218,19 @@ locals {
 
   #   stages = {
   #     for sg in local.yaml.stages :
-  #     can(sg.name) ? "${sg.name}_${local.env}" : "" => {
+  #     can(sg.name) ? "${sg.name}_${local.root_env}" : "" => {
   #       location    = sg.location
   #       integration = sg.integration
   #       comment     = lookup(sg, "comment", "Created by ${local.repo}")
-  #       locations   = lookup(sg, "location", [local.resource_location])
+  #       locations   = lookup(sg, "location", [local.root_location])
   #     }
   #   }
 
   service_users = {
     for su in local.yaml.service_users :
-    can(su.name) ? "${su.name}_${local.env}" : "" => {
+    can(su.name) ? "${su.name}_${local.root_env}" : "" => {
       comment   = lookup(su, "comment", "Created by ${var.repo}")
-      locations = lookup(su, "location", [local.resource_location])
+      locations = lookup(su, "location", [local.root_location])
     }
   }
 }
@@ -283,3 +286,6 @@ output "filtered_integrations" { value = local.filtered_integrations }
 output "integrations" { value = local.integrations }
 # output "stages" { value = local.stages }
 output "service_users" { value = local.service_users }
+
+output "root_env" { value = local.root_env }
+output "root_location" { value = local.root_location }

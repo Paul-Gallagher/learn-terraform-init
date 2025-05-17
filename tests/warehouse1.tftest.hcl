@@ -1,10 +1,9 @@
-# Want to exclude any debug.tftest.hcl files but -filter "!debug.tftest.hcl" doesn't bloody work
-#  - so move them to a separate sub-directory
+# warehouse1.tftest.hcl 
 #
-# terraform test                             # runs the main one(s)
-# terraform test -test-directory=debug       # runs just debug/print out one(s)
+# I Wanted to exclude any debug.tftest.hcl files but -filter "!debug.tftest.hcl" doesn't work
+#  - so move them to a separate sub-directory
 
-# The first four tests check basic functionality
+# The first four tests check basic functionality:
 #  - filtering by env and location
 #  - expansion of ${env} - here only visible in the comments
 #  - default env, location, size and clusters
@@ -14,11 +13,11 @@
 # The fifth one checks the case of unintentionally providing conflicting values
 #  - in which case, the latest / lowest definition wins
 
-variables { config = "config_simple.yaml" }
+variables { config = "config1.yaml" }
 
 ### 1 of 5: DEV IRELAND
 
-run "dev-ireland" {
+run "t1_dev-ireland" {
   command = plan
 
   variables {
@@ -29,7 +28,7 @@ run "dev-ireland" {
         "name"              = "WH_TEST1"
         "location"          = "BA_IRELAND"
         "size"              = "XSMALL"
-        "comment"           = "DEV Ireland"
+        "comment"           = "dev and uat only"
         "max_cluster_count" = 1
       }
     }
@@ -52,7 +51,7 @@ run "dev-ireland" {
 
 ### 2 of 5: PRD IRELAND
 
-run "prd-ireland" {
+run "t2_prd-ireland" {
   command = plan
 
   variables {
@@ -74,7 +73,7 @@ run "prd-ireland" {
 
 ### 3 of 5: DEV LONDON
 
-run "dev-london" {
+run "t3_dev-london" {
   command = plan
 
   variables {
@@ -89,14 +88,14 @@ run "dev-london" {
   }
   assert {
     condition     = local.warehouses == var.expected
-    error_message = "Expected no warehouses but found:\n${jsonencode(local.warehouses)}"
+    error_message = "Expected warehouse to be:\n${jsonencode(var.expected)}\nfound:\n${jsonencode(local.warehouses)}"
   }
 
 }
 
 ### 4 of 5: PRD LONDON
 
-run "prd-london" {
+run "t4_prd-london" {
   command = plan
 
   variables {
@@ -130,7 +129,7 @@ run "prd-london" {
 
 ### 5 of 5: UAT IRELAND - multiple definitions
 
-run "uat-ireland" {
+run "t5_uat-ireland" {
   command = plan
 
   variables {
