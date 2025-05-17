@@ -2,7 +2,7 @@
 #  - nleh! ... so these tests intentionally fail just to show us the values
 #
 # terraform test                             # runs the main one(s)
-# terraform test -test-directory=debug       # runs thesee debug one(s)
+# terraform test -test-directory=debug       # runs just these debug/print out one(s)
 
 run "debug_values" {
   command = plan

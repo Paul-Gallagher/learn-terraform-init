@@ -1,8 +1,8 @@
 ####################################################################################
-# Parse, transform and validate the Snowflake section in a [config.yaml] file
+# config.tf: Parse, transform and validate the Snowflake section in a [config.yaml] file
 #
 # Input: name of the configuration file - default is config.yaml
-# Output: a map of maps for each resource type (warehouses, databases, etc)
+# Output: map of maps in locals for each resource type (warehouses, databases, etc)
 #
 # Overview: Transform and enhance each resource sub-section
 #  - add defaults - such as Snowflake location or warehouse size
@@ -17,7 +17,7 @@
 # Notes: valid locations and defaults should come from some central location
 ####################################################################################
 
-# needs these variables from elsewhere (eg defined in main.tf but set by Githyb workflow)
+# needs these variables from elsewhere (defined in main.tf but set by Github workflow)
 # variable "env"      { type = string }  
 # variable "location" { type = string }
 # variable "repo"     { type = string }
@@ -30,13 +30,12 @@ variable "config" { default = "config.yaml" }
 locals {
   env      = upper(var.env)
   location = upper(var.location)
-  repo     = upper(var.repo)
 
   # constants - used as defaults - get these from elsewhere
   default_location = "BA_IRELAND"
   default_wh_size  = "XSMALL"
   defaut_clusters  = 1
-  default_comment  = "Created by ${local.repo}"
+  default_comment  = "Created by ${var.repo}"
 
 
   # first read the configuration file as a plain string
@@ -141,7 +140,7 @@ locals {
     {
       name          = lookup(db, "name", "")
       extra_schemas = lookup(db, "extra_schemas", [])
-      comment       = lookup(db, "comment", "Created by ${local.repo}")
+      comment       = lookup(db, "comment", "Created by ${var.repo}")
       env           = local.env
       location      = local.location
     }
@@ -180,7 +179,7 @@ locals {
       name              = lookup(ig, "name", "")
       allowed_locations = lookup(ig, "allowed_locations", [])
       stages            = lookup(ig, "stages", [])
-      comment           = lookup(ig, "comment", "Created by ${local.repo}")
+      comment           = lookup(ig, "comment", "Created by ${var.repo}")
       env               = local.env
       location          = local.location
     }
@@ -227,7 +226,7 @@ locals {
   service_users = {
     for su in local.yaml.service_users :
     can(su.name) ? "${su.name}_${local.env}" : "" => {
-      comment   = lookup(su, "comment", "Created by ${local.repo}")
+      comment   = lookup(su, "comment", "Created by ${var.repo}")
       locations = lookup(su, "location", [local.resource_location])
     }
   }
@@ -276,7 +275,7 @@ resource "terraform_data" "validate_sections" {
 # }
 
 # output "yaml_warehouses" { value = local.yaml.warehouses }
-# output "filtered_warehouses" { value = local.filtered_warehouses }
+output "filtered_warehouses" { value = local.filtered_warehouses }
 output "warehouses" { value = local.warehouses }
 # output "filtered_databases" { value = local.filtered_databases }
 output "databases" { value = local.databases }

@@ -1,27 +1,163 @@
-# we want to exclude any debug.tftest.hcl files but -filter "!debug.tftest.hcl" doesn't bloody work
+# Want to exclude any debug.tftest.hcl files but -filter "!debug.tftest.hcl" doesn't bloody work
 #  - so move them to a separate sub-directory
 #
 # terraform test                             # runs the main one(s)
-# terraform test -test-directory=debug       # runs thesee debug one(s)
+# terraform test -test-directory=debug       # runs just debug/print out one(s)
 
-run "test1" {
+# The first four tests check basic functionality
+#  - filtering by env and location
+#  - expansion of ${env} - here only visible in the comments
+#  - default env, location, size and clusters
+#  - ability to give single value lists as a string
+#  - case insensitivity of env and location
+#
+# The fifth one checks the case of unintentionally providing conflicting values
+#  - in which case, the latest / lowest definition wins
+
+variables { config = "config_simple.yaml" }
+
+### 1 of 5: DEV IRELAND
+
+run "dev-ireland" {
   command = plan
 
   variables {
-    # these are the default values
     env      = "dev"
     location = "BA_IRELAND"
+    expected = {
+      "WH_TEST1_BA_IRELAND" = {
+        "name"              = "WH_TEST1"
+        "location"          = "BA_IRELAND"
+        "size"              = "XSMALL"
+        "comment"           = "DEV Ireland"
+        "max_cluster_count" = 1
+      }
+    }
   }
 
+  assert {
+    condition     = length(local.warehouses) == 1
+    error_message = "Expected a single warehouse but found ${length(local.warehouses)}"
+  }
   assert {
     condition     = can(local.warehouses["WH_TEST1_BA_IRELAND"])
-    error_message = "Expected to find WH_TEST1_BA_IRELAND warehouse in dev environment"
+    error_message = "Expected to find key WH_TEST1_BA_IRELAND"
   }
-
   assert {
-    condition     = can(local.warehouses)
-    error_message = "This is a test ${jsonencode(local.warehouses)}"
+    condition     = local.warehouses == var.expected
+    error_message = "Expected warehouse to be:\n${jsonencode(var.expected)}\nfound:\n${jsonencode(local.warehouses)}"
   }
 
 }
 
+### 2 of 5: PRD IRELAND
+
+run "prd-ireland" {
+  command = plan
+
+  variables {
+    env      = "prd"
+    location = "BA_IRELAND"
+    expected = {}
+  }
+
+  assert {
+    condition     = length(local.warehouses) == 0
+    error_message = "Expected no warehouses but found ${length(local.warehouses)}"
+  }
+  assert {
+    condition     = local.warehouses == var.expected
+    error_message = "Expected no warehouses but found:\n${jsonencode(local.warehouses)}"
+  }
+
+}
+
+### 3 of 5: DEV LONDON
+
+run "dev-london" {
+  command = plan
+
+  variables {
+    env      = "dev"
+    location = "BA_LONDON"
+    expected = {}
+  }
+
+  assert {
+    condition     = length(local.warehouses) == 0
+    error_message = "Expected no warehouses but found ${length(local.warehouses)}"
+  }
+  assert {
+    condition     = local.warehouses == var.expected
+    error_message = "Expected no warehouses but found:\n${jsonencode(local.warehouses)}"
+  }
+
+}
+
+### 4 of 5: PRD LONDON
+
+run "prd-london" {
+  command = plan
+
+  variables {
+    env      = "prd"
+    location = "BA_LONDON"
+    expected = {
+      "WH_TEST1_BA_LONDON" = {
+        "name"              = "WH_TEST1"
+        "location"          = "BA_LONDON"
+        "size"              = "LARGE"
+        "comment"           = "PRD London"
+        "max_cluster_count" = 2
+      }
+    }
+  }
+
+  assert {
+    condition     = length(local.warehouses) == 1
+    error_message = "Expected a single warehouse but found ${length(local.warehouses)}"
+  }
+  assert {
+    condition     = can(local.warehouses["WH_TEST1_BA_LONDON"])
+    error_message = "Expected to find key WH_TEST1_BA_LONDON"
+  }
+  assert {
+    condition     = local.warehouses == var.expected
+    error_message = "Expected warehouse to be:\n${jsonencode(var.expected)}\nfound:\n${jsonencode(local.warehouses)}"
+  }
+
+}
+
+### 5 of 5: UAT IRELAND - multiple definitions
+
+run "uat-ireland" {
+  command = plan
+
+  variables {
+    env      = "uat"
+    location = "BA_IRELAND"
+    expected = {
+      "WH_TEST1_BA_IRELAND" = {
+        "name"              = "WH_TEST1"
+        "location"          = "BA_IRELAND"
+        "size"              = "MEDIUM"
+        "comment"           = "takes precedence"
+        "max_cluster_count" = 1
+      }
+    }
+  }
+
+  assert {
+    condition     = length(local.warehouses) == 1
+    error_message = "Expected a single warehouse but found ${length(local.warehouses)}"
+  }
+  assert {
+    condition     = can(local.warehouses["WH_TEST1_BA_IRELAND"])
+    error_message = "Expected to find key WH_TEST1_BA_IRELAND"
+  }
+  assert {
+    condition     = local.warehouses == var.expected
+    error_message = "Expected warehouse to be:\n${jsonencode(var.expected)}\nfound:\n${jsonencode(local.warehouses)}"
+  }
+
+}

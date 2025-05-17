@@ -1,5 +1,5 @@
 ###################################################################
-### terraform tests config file
+### config_simple.yaml - terraform tests config file
 ###################################################################
 
 Snowflake:
@@ -10,11 +10,16 @@ Snowflake:
     - name: WH_TEST1
       env: [dev, uat]
       # size: x-small          # the default
-      comment: comment ireland
+      comment: ${env} Ireland
 
     - name: WH_TEST1
       env: prd
       location: ba_london
       size: large
       clusters: 2
-      comment: comment london
+      comment: ${env} London
+
+    - name: WH_TEST1
+      env: uat
+      size: medium
+      comment: takes precedence
