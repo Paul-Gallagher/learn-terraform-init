@@ -34,7 +34,7 @@ Transformation:
   - TransformationType: dbt-snowflake
 
 ###################################################################
-### Snowflake config - why have the team chosen title-case?
+### Snowflake config - see .tftest.hcl files in the tests folder
 ###################################################################
 Snowflake:
   # env: ${env}           # implicitly the deployment environment

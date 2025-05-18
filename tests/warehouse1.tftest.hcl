@@ -6,7 +6,7 @@
 # The first four tests check basic functionality:
 #  - filtering by env and location
 #  - expansion of ${env} - here only visible in the comments
-#  - default env, location, size and clusters
+#  - default env, location, size, clusters and comment
 #  - ability to give single value lists as a string
 #  - case insensitivity of env and location
 #
@@ -14,7 +14,11 @@
 #  - in which case, the latest / lowest definition wins
 # The sixth just completes the set
 
-variables { config = "config1.yaml" }
+variables {
+  config = "config1.yaml"
+  repo   = "olympus-infr-adm-snowflake" # needed to check default comment in test 6
+}
+
 
 ### 1 of 6: DEV IRELAND
 
@@ -163,7 +167,7 @@ run "t5_uat-ireland" {
 }
 
 
-### 6 of 6: UAT LONDON
+### 6 of 6: UAT LONDON - check default comment
 
 run "t6_uat-london" {
   command = plan
@@ -171,12 +175,24 @@ run "t6_uat-london" {
   variables {
     env      = "uat"
     location = "ba_london"
-    expected = {}
+    expected = {
+      "WH_TEST2_BA_LONDON" = {
+        "name"              = "WH_TEST2"
+        "location"          = "BA_LONDON"
+        "size"              = "XSMALL"
+        "comment"           = "Created by ${var.repo}"
+        "max_cluster_count" = 1
+      }
+    }
   }
 
   assert {
-    condition     = length(local.warehouses) == 0
-    error_message = "Expected no warehouses but found ${length(local.warehouses)}"
+    condition     = length(local.warehouses) == 1
+    error_message = "Expected a single warehouse but found ${length(local.warehouses)}"
+  }
+  assert {
+    condition     = can(local.warehouses["WH_TEST2_BA_LONDON"])
+    error_message = "Expected to find key WH_TEST2_BA_LONDON"
   }
   assert {
     condition     = local.warehouses == var.expected

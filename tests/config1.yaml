@@ -20,3 +20,7 @@ Snowflake:
       env: uat
       size: medium
       comment: takes precedence
+
+    - name: WH_TEST2
+      env: uat
+      location: ba_london
