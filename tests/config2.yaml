@@ -4,20 +4,15 @@ Snowflake: # NB: root-level defaults
   env: dev
   location: ba_london
 
-  # TODO: warehouses are not related to environments
   warehouse:
     - name: WH_TEST1
-      location: ba_ireland
-      comment: forced to Ireland only
+      comment: London 1
 
     - name: WH_TEST2
+      size: large
+      clusters: 2
       comment: London 2
 
     - name: WH_TEST3
-      size: large
-      clusters: 2
-      comment: London 3
-
-    - name: WH_TEST4
-      env: prd
-      comment: forced to PRD only
+      location: ba_ireland
+      comment: forced to Ireland only

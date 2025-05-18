@@ -45,33 +45,31 @@ Snowflake:
       comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
       location: BA_LONDON
 
-  # TODO: warehouses are not related to environments
+  # NB: warehouses are not related to environments
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
       size: MEDIUM
 
     - name: WH_TEST1
-      env: [UAT, PRD] # only deploy to these environments
       size: LARGE
       clusters: 2
 
     # can even change parameters across Snowflake locations
     - name: WH_TEST1
       location: [ba_london, ba_bangkok] # demonstrating case insensitivity
-      env: dEV # demonstrating single values as a string and case-insensitivity
-      size: x-large # demonstrating case insensitivity
+      size: x-large
       comment: Special extra large warehouse for London
       clusters: 3
 
   database:
     - name: DB_THING1 # NOTE: gets an implicit _${env} suffix
+      env: dev # demonstrating single list entry as a string
       extra_schemas: [VIEWS_EI, VIEWS_IB, VIEWS_IAG]
-      env: DEV
 
     - name: DB_THING2
-      location: [BA_LONDON, BA_IRELAND]
+      env: [UAT, PRD] # only deploy to these environments
+      location: [ba_london, ba_ireland]
       comment: Database for something special in London uat & production only
-      env: [UAT, PRD]
 
   # these create S3 storage integrations and external stage(s)
   # role always seems to be aws-location/ba-olympus-snowflake ?

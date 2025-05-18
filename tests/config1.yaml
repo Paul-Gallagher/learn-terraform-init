@@ -4,26 +4,21 @@ Snowflake:
   # env: ${env}           # implicitly the deployment environment
   # location: BA_IRELAND  # our default Snowflake instance
 
-  # TODO: warehouses are not related to environments
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
-      env: [dev, uat]
-      comment: dev and uat only
+      comment: first definition
 
     - name: WH_TEST1
-      env: prd
       location: ba_london
       size: large
       clusters: 2
       comment: ${env} London
 
     - name: WH_TEST1
-      env: uat
       size: medium
-      comment: takes precedence
+      comment: latest wins
 
     - name: WH_TEST2
-      env: uat
       location: ba_london
 
   database:

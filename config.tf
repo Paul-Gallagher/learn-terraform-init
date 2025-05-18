@@ -70,7 +70,6 @@ locals {
   #       size               = lookup(wh, "size", local.default_wh_size)
   #       max_cluster_count  = lookup(wh, "clusters", local.default_clusters)
   #       comment            = lookup(wh, "comment", local.default_comment)
-  #       location           = lookup(wh, "location", local.root_location)
   #     }
   #     if contains(lookup(wh, "env", [local.root_env]), local.root_env)
   #   }
@@ -90,25 +89,14 @@ locals {
       size              = upper(lookup(wh, "size", local.default_wh_size))
       max_cluster_count = lookup(wh, "clusters", local.defaut_clusters)
       comment           = lookup(wh, "comment", "Created by ${var.repo}")
-      env               = local.env
       location          = local.location
     }
-    # filter out entries other than those for the current environment and location
+    # filter out entries other than those for the deploy location
     if contains(
-      [ # make sure the env entry is a list of strings
-        for e in(
-          try(
-            # try to access it as a list - which will fail if it's a mere string
-            tolist(lookup(wh, "env", [local.env])),
-            # fallback - treat it as a string and wrap in a list
-            [lookup(wh, "env", local.env)]
-          )
-      ) : upper(e)],
-    local.env)
-    && contains(
-      [ # similar logic for location - allow it to be a list or a string
+      [
         for l in(
           try(
+            # allow location to be a list or a string
             tolist(lookup(wh, "location", [local.root_location])),
             [lookup(wh, "location", local.root_location)]
           )
@@ -133,7 +121,6 @@ locals {
       size              = entries[length(entries) - 1].size
       max_cluster_count = entries[length(entries) - 1].max_cluster_count
       comment           = entries[length(entries) - 1].comment
-      env               = entries[length(entries) - 1].env
       location          = entries[length(entries) - 1].location
     }
   }
