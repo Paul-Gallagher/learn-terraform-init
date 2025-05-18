@@ -1,6 +1,7 @@
 # warehouse2.tftest.hcl 
 
-# Test root overrides of env and location and multiple warehouses
+# Test root overrides of env and location 
+# Test multiple warehouses  (dev/uat/prd london)
 
 variables { config = "config2.yaml" }
 
@@ -11,7 +12,7 @@ run "t1_dev-ireland" {
 
   variables {
     env      = "dev"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {
       "WH_TEST1_BA_IRELAND" = {
         "name"              = "WH_TEST1"
@@ -45,7 +46,7 @@ run "t2_uat-ireland" {
 
   variables {
     env      = "uat"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {
       "WH_TEST1_BA_IRELAND" = {
         "name"              = "WH_TEST1"
@@ -79,7 +80,7 @@ run "t3_prd-ireland" {
 
   variables {
     env      = "prd"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {
       "WH_TEST1_BA_IRELAND" = {
         "name"              = "WH_TEST1"
@@ -113,7 +114,7 @@ run "t4_dev-london" {
 
   variables {
     env      = "dev"
-    location = "BA_LONDON"
+    location = "ba_london"
     expected = {
       "WH_TEST2_BA_LONDON" = {
         "name"              = "WH_TEST2"
@@ -158,7 +159,7 @@ run "t5_uat-london" {
 
   variables {
     env      = "uat"
-    location = "BA_LONDON"
+    location = "ba_london"
     expected = {
       "WH_TEST2_BA_LONDON" = {
         "name"              = "WH_TEST2"
@@ -201,8 +202,8 @@ run "t6_prd-london" {
   command = plan
 
   variables {
-    env      = "dev"
-    location = "BA_LONDON"
+    env      = "prd"
+    location = "ba_london"
     expected = {
       "WH_TEST2_BA_LONDON" = {
         "name"              = "WH_TEST2"
@@ -217,12 +218,19 @@ run "t6_prd-london" {
         "size"              = "LARGE"
         "comment"           = "London 3"
         "max_cluster_count" = 2
+      },
+      "WH_TEST4_BA_LONDON" = {
+        "name"              = "WH_TEST4"
+        "location"          = "BA_LONDON"
+        "size"              = "XSMALL"
+        "comment"           = "forced to PRD only"
+        "max_cluster_count" = 1
       }
     }
   }
 
   assert {
-    condition     = length(local.warehouses) == 2
+    condition     = length(local.warehouses) == 3
     error_message = "Expected no warehouses but found ${length(local.warehouses)}"
   }
   assert {
@@ -232,6 +240,10 @@ run "t6_prd-london" {
   assert {
     condition     = can(local.warehouses["WH_TEST3_BA_LONDON"])
     error_message = "Expected to find key WH_TEST3_BA_LONDON"
+  }
+  assert {
+    condition     = can(local.warehouses["WH_TEST4_BA_LONDON"])
+    error_message = "Expected to find key WH_TEST4_BA_LONDON"
   }
   assert {
     condition     = local.warehouses == var.expected

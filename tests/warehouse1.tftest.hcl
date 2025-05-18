@@ -12,7 +12,8 @@
 #
 # The fifth checks the case of unintentionally providing conflicting values
 #  - in which case, the latest / lowest definition wins
-# The sixth just completes the set
+#
+# The sixth checks default comments
 
 variables {
   config = "config1.yaml"
@@ -165,7 +166,6 @@ run "t5_uat-ireland" {
   }
 
 }
-
 
 ### 6 of 6: UAT LONDON - check default comment
 
