@@ -1,10 +1,10 @@
 # config1.yaml - see warehouse2.tftest.hcl
 
-Snowflake:
+Snowflake: # NB: root-level defaults
   env: dev
   location: ba_london
 
-  warehouse: # defaults to single cluster XSMALL
+  warehouse:
     - name: WH_TEST1
       location: ba_ireland
       comment: forced to Ireland only

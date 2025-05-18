@@ -10,19 +10,20 @@
 #  - ability to give single value lists as a string
 #  - case insensitivity of env and location
 #
-# The fifth one checks the case of unintentionally providing conflicting values
+# The fifth checks the case of unintentionally providing conflicting values
 #  - in which case, the latest / lowest definition wins
+# The sixth just completes the set
 
 variables { config = "config1.yaml" }
 
-### 1 of 5: DEV IRELAND
+### 1 of 6: DEV IRELAND
 
 run "t1_dev-ireland" {
   command = plan
 
   variables {
     env      = "dev"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {
       "WH_TEST1_BA_IRELAND" = {
         "name"              = "WH_TEST1"
@@ -49,14 +50,14 @@ run "t1_dev-ireland" {
 
 }
 
-### 2 of 5: PRD IRELAND
+### 2 of 6: PRD IRELAND
 
 run "t2_prd-ireland" {
   command = plan
 
   variables {
     env      = "prd"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {}
   }
 
@@ -71,14 +72,14 @@ run "t2_prd-ireland" {
 
 }
 
-### 3 of 5: DEV LONDON
+### 3 of 6: DEV LONDON
 
 run "t3_dev-london" {
   command = plan
 
   variables {
     env      = "dev"
-    location = "BA_LONDON"
+    location = "ba_london"
     expected = {}
   }
 
@@ -93,14 +94,14 @@ run "t3_dev-london" {
 
 }
 
-### 4 of 5: PRD LONDON
+### 4 of 6: PRD LONDON
 
 run "t4_prd-london" {
   command = plan
 
   variables {
     env      = "prd"
-    location = "BA_LONDON"
+    location = "ba_london"
     expected = {
       "WH_TEST1_BA_LONDON" = {
         "name"              = "WH_TEST1"
@@ -127,14 +128,14 @@ run "t4_prd-london" {
 
 }
 
-### 5 of 5: UAT IRELAND - multiple definitions
+### 5 of 6: UAT IRELAND - multiple definitions
 
 run "t5_uat-ireland" {
   command = plan
 
   variables {
     env      = "uat"
-    location = "BA_IRELAND"
+    location = "ba_ireland"
     expected = {
       "WH_TEST1_BA_IRELAND" = {
         "name"              = "WH_TEST1"
@@ -153,6 +154,29 @@ run "t5_uat-ireland" {
   assert {
     condition     = can(local.warehouses["WH_TEST1_BA_IRELAND"])
     error_message = "Expected to find key WH_TEST1_BA_IRELAND"
+  }
+  assert {
+    condition     = local.warehouses == var.expected
+    error_message = "Expected warehouse to be:\n${jsonencode(var.expected)}\nfound:\n${jsonencode(local.warehouses)}"
+  }
+
+}
+
+
+### 6 of 6: UAT LONDON
+
+run "t6_uat-london" {
+  command = plan
+
+  variables {
+    env      = "uat"
+    location = "ba_london"
+    expected = {}
+  }
+
+  assert {
+    condition     = length(local.warehouses) == 0
+    error_message = "Expected no warehouses but found ${length(local.warehouses)}"
   }
   assert {
     condition     = local.warehouses == var.expected
