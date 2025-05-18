@@ -4,6 +4,7 @@ Snowflake: # NB: root-level defaults
   env: dev
   location: ba_london
 
+  # TODO: warehouses are not related to environments
   warehouse:
     - name: WH_TEST1
       location: ba_ireland

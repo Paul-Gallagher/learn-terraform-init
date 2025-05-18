@@ -1,11 +1,13 @@
+####################################################################################
 # warehouse2.tftest.hcl 
-
+#
 # Test root overrides of env and location 
 # Test multiple warehouses  (dev/uat/prd london)
+####################################################################################
 
 variables { config = "config2.yaml" }
 
-### 1 of 6: DEV IRELAND
+### 1 of 6: DEV IRELAND ############################################################
 
 run "t1_dev-ireland" {
   command = plan
@@ -39,7 +41,7 @@ run "t1_dev-ireland" {
 
 }
 
-### 2 of 6: UAT IRELAND
+### 2 of 6: UAT IRELAND ############################################################
 
 run "t2_uat-ireland" {
   command = plan
@@ -73,7 +75,7 @@ run "t2_uat-ireland" {
 
 }
 
-### 3 of 6: PRD IRELAND - same as dev ireland
+### 3 of 6: PRD IRELAND - same as dev ireland ######################################
 
 run "t3_prd-ireland" {
   command = plan
@@ -107,7 +109,8 @@ run "t3_prd-ireland" {
 
 }
 
-### 4 of 6: DEV LONDON
+### 4 of 6: DEV LONDON #############################################################
+
 
 run "t4_dev-london" {
   command = plan
@@ -152,7 +155,8 @@ run "t4_dev-london" {
 
 }
 
-### 5 of 6: UAT LONDON
+### 5 of 6: UAT LONDON #############################################################
+
 
 run "t5_uat-london" {
   command = plan
@@ -196,7 +200,7 @@ run "t5_uat-london" {
   }
 }
 
-### 6 of 6: PRD LONDON - same as dev london
+### 6 of 6: PRD LONDON #############################################################
 
 run "t6_prd-london" {
   command = plan

@@ -1,7 +1,5 @@
 ####################################################################################
-# main.tf: Minimal file to test config.tf functionality
-#
-# NB: uses symlinked config.tf and config.yaml
+# main.tf: Minimal file to validate config.yaml against our schema
 ####################################################################################
 
 # from gihub workflow  NB: terraform test files don't inherit these 
@@ -11,7 +9,4 @@ variable "location" { default = "BA_IRELAND" }
 variable "repo" { default = "olympus-infr-adm-snowflake" }
 
 # terraform combines all files with a .tf extension 
-# in particular it will pick up our symlinked config.tf 
-
-# terraform test will then run all files with a .tftest.hcl extension
-
+# in particular, our symlinked config.tf and config.yaml and our checks.tf

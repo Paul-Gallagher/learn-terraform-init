@@ -82,6 +82,7 @@ locals {
   # In the end I broke it down into two steps for a bit of extra legibility
 
   # Step 1: Filter warehouse entries and add defaults for missing keys
+  #          reminder to self: not env specific
   filtered_warehouses = [
     for wh in local.yaml.warehouses :
     {
@@ -132,6 +133,7 @@ locals {
       size              = entries[length(entries) - 1].size
       max_cluster_count = entries[length(entries) - 1].max_cluster_count
       comment           = entries[length(entries) - 1].comment
+      env               = entries[length(entries) - 1].env
       location          = entries[length(entries) - 1].location
     }
   }
@@ -141,11 +143,19 @@ locals {
   filtered_databases = [
     for db in local.yaml.databases :
     {
-      name          = lookup(db, "name", "")
-      extra_schemas = lookup(db, "extra_schemas", [])
-      comment       = lookup(db, "comment", "Created by ${var.repo}")
-      env           = local.env
-      location      = local.location
+      name    = lookup(db, "name", "") != "" ? "${db.name}_${local.env}" : ""
+      comment = lookup(db, "comment", "Created by ${var.repo}")
+      extra_schemas = [
+        for schema in(
+          try(
+            # allow single value lists to be specified as a string
+            tolist(lookup(db, "extra_schemas", [])),
+            [lookup(db, "extra_schemas", [])]
+        )) :
+        upper(schema) if schema != null
+      ]
+      env      = local.env
+      location = local.location
     }
     # filter - see comments for filtered_warehouses above
     if contains([for e in(
@@ -172,6 +182,7 @@ locals {
       name          = entries[length(entries) - 1].name
       extra_schemas = entries[length(entries) - 1].extra_schemas
       comment       = entries[length(entries) - 1].comment
+      env           = entries[length(entries) - 1].env
       location      = entries[length(entries) - 1].location
     }
   }
@@ -212,6 +223,7 @@ locals {
       name              = entries[length(entries) - 1].name
       allowed_locations = entries[length(entries) - 1].allowed_locations
       comment           = entries[length(entries) - 1].comment
+      env               = entries[length(entries) - 1].env
       location          = entries[length(entries) - 1].location
     }
   }
@@ -226,6 +238,7 @@ locals {
   #     }
   #   }
 
+  # reminder to self: no env
   service_users = {
     for su in local.yaml.service_users :
     can(su.name) ? "${su.name}_${local.root_env}" : "" => {
@@ -236,39 +249,39 @@ locals {
 }
 
 # run some validation checks
-resource "terraform_data" "validate_sections" {
-  input = {
-    warehouses   = local.warehouses
-    databases    = local.databases
-    integrations = local.integrations
-    # stages        = local.stages
-    service_users = local.service_users
-  }
+# resource "terraform_data" "validate_sections" {
+#   input = {
+#     warehouses   = local.warehouses
+#     databases    = local.databases
+#     integrations = local.integrations
+#     # stages        = local.stages
+#     service_users = local.service_users
+#   }
 
-  lifecycle {
-    precondition {
-      condition     = alltrue([for name, _ in local.warehouses : name != ""])
-      error_message = "ERROR: All warehouses must have a name - please check config.yml"
-    }
-    precondition {
-      condition     = alltrue([for name, _ in local.databases : name != ""])
-      error_message = "ERROR: All databases must have a name - please check config.yml"
-    }
-    precondition {
-      condition     = alltrue([for name, _ in local.integrations : name != ""])
-      error_message = "ERROR: All integrations must have a name - please check config.yml"
-    }
-    # precondition {
-    #   condition     = alltrue([for name, _ in local.stages : name != ""])
-    #   error_message = "ERROR: All stages must have a name - please check config.yml"
-    # }
-    precondition {
-      condition     = alltrue([for name, _ in local.service_users : name != ""])
-      error_message = "ERROR: service_user must have a name - please check config.yml"
-    }
-  }
+#   lifecycle {
+#     precondition {
+#       condition     = alltrue([for name, _ in local.warehouses : name != ""])
+#       error_message = "ERROR: All warehouses must have a name - please check config.yml"
+#     }
+#     precondition {
+#       condition     = alltrue([for name, _ in local.databases : name != ""])
+#       error_message = "ERROR: All databases must have a name - please check config.yml"
+#     }
+#     precondition {
+#       condition     = alltrue([for name, _ in local.integrations : name != ""])
+#       error_message = "ERROR: All integrations must have a name - please check config.yml"
+#     }
+#     # precondition {
+#     #   condition     = alltrue([for name, _ in local.stages : name != ""])
+#     #   error_message = "ERROR: All stages must have a name - please check config.yml"
+#     # }
+#     precondition {
+#       condition     = alltrue([for name, _ in local.service_users : name != ""])
+#       error_message = "ERROR: service_user must have a name - please check config.yml"
+#     }
+#   }
 
-}
+# }
 
 # --- these are purely for debugging ------------------------------------
 
@@ -277,10 +290,9 @@ resource "terraform_data" "validate_sections" {
 #   value       = terraform_data.validate_sections.input
 # }
 
-# output "yaml_warehouses" { value = local.yaml.warehouses }
 output "filtered_warehouses" { value = local.filtered_warehouses }
 output "warehouses" { value = local.warehouses }
-# output "filtered_databases" { value = local.filtered_databases }
+output "filtered_databases" { value = local.filtered_databases }
 output "databases" { value = local.databases }
 output "filtered_integrations" { value = local.filtered_integrations }
 output "integrations" { value = local.integrations }

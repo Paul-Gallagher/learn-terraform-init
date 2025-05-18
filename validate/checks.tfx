@@ -1,0 +1,189 @@
+
+####################################################################################
+# checks.tf: these only run during a plan or apply so can't be in the /tests/ folder
+#
+# NB: uses symlinked config.tf and config.yaml
+#
+# terraform plan -detailed-exitcode is supposed to return 2 if any chechs fail
+# on CMD at least, it doesn't - echo rc=%ERRORLEVEL%  gives rc=0
+# need to write plan output to a file and grep for "assertion failed"
+####################################################################################
+
+variable "schema" { default = "snowflake_schema.yaml" }
+
+locals {
+  schema_config = yamldecode(file(var.schema))
+
+  # schema has name: regex(WH_[A-Z0-9]+)  - strip off the "regex(" and ")" wrappers  
+  wh_name_regex = trimprefix(trimsuffix(local.schema_config.warehouse.name, ")"), "regex(")
+  db_name_regex = trimprefix(trimsuffix(local.schema_config.database.name, ")"), "regex(")
+  schema_regex  = trimprefix(trimsuffix(local.schema_config.database.schema, ")"), "regex(")
+}
+
+### WAREHOUSE CHECKS ###############################################################
+
+check "check_warehouse_environments" {
+  assert {
+    condition = length(local.warehouses) == 0 || alltrue([
+      for key, wh in local.warehouses :
+      contains(local.schema_config.env, wh.env)
+    ])
+    error_message = "Invalid Warehouse environment(s):\n${join("\n", [
+      for key, wh in local.warehouses :
+      "  - ${wh.name}: ${wh.env}"
+      if !contains(local.schema_config.env, wh.env)
+    ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+  }
+}
+
+check "check_warehouse_locations" {
+  assert {
+    condition = length(local.warehouses) == 0 || alltrue([
+      for key, wh in local.warehouses :
+      contains(local.schema_config.location, wh.location)
+    ])
+    error_message = "Invalid Warehouse location(s):\n${join("\n", [
+      for key, wh in local.warehouses :
+      "  - ${wh.name}: ${wh.location}"
+      if !contains(local.schema_config.location, wh.location)
+    ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+  }
+}
+
+# his checks warehouses with names starting WH_ against the possible sie list
+# while those with names starting WHX_ are checked against the sizex one
+check "check_warehouse_sizes" {
+  assert {
+    condition = length(local.warehouses) == 0 || alltrue([
+      for key, wh in local.warehouses :
+      # check against either the sizex of size list depending on the name
+      can(regex("^WHX_", wh.name)) ?
+      contains(local.schema_config.warehouse.sizex, wh.size) :
+      contains(local.schema_config.warehouse.size, wh.size)
+    ])
+    error_message = "Invalid Warehouse size(s):\n${join("\n", [
+      for key, wh in local.warehouses :
+      "  - ${wh.name}: ${wh.size} (${can(regex("^WHX_", wh.name)) ? "extended size" : "standard size"})"
+      if can(regex("^WHX_", wh.name)) ?
+      !contains(local.schema_config.warehouse.sizex, wh.size) :
+      !contains(local.schema_config.warehouse.size, wh.size)
+    ])}\nValid standard sizes: ${jsonencode(local.schema_config.warehouse.size)}\nValid extended sizes: ${jsonencode(local.schema_config.warehouse.sizex)}"
+  }
+}
+
+check "check_warehouse_names" {
+  assert {
+    condition = (
+      length(local.warehouses) == 0 ||
+      alltrue([
+        for key, wh in local.warehouses :
+        can(regex(local.wh_name_regex, wh.name))
+      ])
+    )
+    error_message = "Invalid Warehouse name(s):\n${join("\n", [
+      for key, wh in local.warehouses :
+      "  - ${wh.name}"
+      if !can(regex(local.wh_name_regex, wh.name))
+    ])}\nWarehouse names must match pattern: ${local.wh_name_regex}"
+  }
+}
+
+# this is probably OTT but I was having fun ...
+check "check_warehouse_clusters" {
+  assert {
+    condition = length(local.warehouses) == 0 || alltrue([
+      for key, wh in local.warehouses :
+      wh.max_cluster_count <= lookup(
+        local.schema_config.warehouse.cluster,
+        wh.size,
+        10 # absolute default if no match found
+      )
+    ])
+    error_message = "Invalid cluster count for warehouses:\n${join("\n", [
+      for key, wh in local.warehouses :
+      "  - ${wh.name}: max_cluster_count ${wh.max_cluster_count} exceeds limit of ${
+        lookup(
+          local.schema_config.warehouse.cluster,
+          wh.size,
+          10
+        )
+      } for size ${wh.size}"
+      if wh.max_cluster_count > lookup(
+        local.schema_config.warehouse.cluster,
+        wh.size,
+        10
+      )
+    ])}"
+  }
+}
+
+### DATABASE CHECKS ################################################################
+
+check "check_database_environments" {
+  assert {
+    condition = length(local.databases) == 0 || alltrue([
+      for key, db in local.databases :
+      contains(local.schema_config.env, db.env)
+    ])
+    error_message = "Invalid Database environment(s):\n${join("\n", [
+      for key, db in local.databases :
+      "  - ${db.name}: ${db.env}"
+      if !contains(local.schema_config.env, db.env)
+    ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+  }
+}
+
+check "check_database_locations" {
+  assert {
+    condition = length(local.databases) == 0 || alltrue([
+      for key, db in local.databases :
+      contains(local.schema_config.location, db.location)
+    ])
+    error_message = "Invalid Database location(s):\n${join("\n", [
+      for key, db in local.databases :
+      "  - ${db.name}: ${db.location}"
+      if !contains(local.schema_config.location, db.location)
+    ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+  }
+}
+
+check "check_database_names" {
+  assert {
+    condition = (
+      length(local.databases) == 0 ||
+      alltrue([
+        for key, db in local.databases :
+        can(regex(local.db_name_regex, db.name))
+      ])
+    )
+    error_message = "Invalid Database name(s):\n${join("\n", [
+      for key, db in local.databases :
+      "  - ${db.name}"
+      if !can(regex(local.db_name_regex, db.name))
+    ])}\nDatabase names must match pattern: ${local.db_name_regex}"
+  }
+}
+
+check "check_database_extra_schemas" {
+  assert {
+    condition = length(local.databases) == 0 || alltrue([
+      for key, db in local.databases :
+      can(tolist(db.extra_schemas)) &&
+      alltrue([
+        for schema in db.extra_schemas :
+        can(tostring(schema)) &&
+        can(regex("^${local.schema_regex}$", schema))
+      ])
+    ])
+    error_message = "Invalid extra_schemas configuration:\n${join("\n", [
+      for key, db in local.databases :
+      "  - ${db.name}: ${jsonencode(db.extra_schemas)}"
+      if !can(tolist(db.extra_schemas)) ||
+      !alltrue([
+        for schema in db.extra_schemas :
+        can(tostring(schema)) &&
+        can(regex("^${local.schema_regex}$", schema))
+      ])
+    ])}\nExtra schemas must match the pattern: ${local.schema_regex}"
+  }
+}

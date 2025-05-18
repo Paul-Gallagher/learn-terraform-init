@@ -1,8 +1,9 @@
+####################################################################################
 # warehouse1.tftest.hcl 
 #
 # I Wanted to exclude any debug.tftest.hcl files but -filter "!debug.tftest.hcl" doesn't work
 #  - so move them to a separate sub-directory
-
+#
 # The first four tests check basic functionality:
 #  - filtering by env and location
 #  - expansion of ${env} - here only visible in the comments
@@ -14,14 +15,14 @@
 #  - in which case, the latest / lowest definition wins
 #
 # The sixth checks default comments
+####################################################################################
 
 variables {
   config = "config1.yaml"
   repo   = "olympus-infr-adm-snowflake" # needed to check default comment in test 6
 }
 
-
-### 1 of 6: DEV IRELAND
+### 1 of 6: DEV IRELAND ############################################################
 
 run "t1_dev-ireland" {
   command = plan
@@ -55,7 +56,7 @@ run "t1_dev-ireland" {
 
 }
 
-### 2 of 6: PRD IRELAND
+### 2 of 6: PRD IRELAND ############################################################
 
 run "t2_prd-ireland" {
   command = plan
@@ -77,7 +78,7 @@ run "t2_prd-ireland" {
 
 }
 
-### 3 of 6: DEV LONDON
+### 3 of 6: DEV LONDON #############################################################
 
 run "t3_dev-london" {
   command = plan
@@ -99,7 +100,7 @@ run "t3_dev-london" {
 
 }
 
-### 4 of 6: PRD LONDON
+### 4 of 6: PRD LONDON #############################################################
 
 run "t4_prd-london" {
   command = plan
@@ -133,7 +134,7 @@ run "t4_prd-london" {
 
 }
 
-### 5 of 6: UAT IRELAND - multiple definitions
+### 5 of 6: UAT IRELAND - multiple definitions #####################################
 
 run "t5_uat-ireland" {
   command = plan
@@ -167,7 +168,7 @@ run "t5_uat-ireland" {
 
 }
 
-### 6 of 6: UAT LONDON - check default comment
+### 6 of 6: UAT LONDON - check default comment #####################################
 
 run "t6_uat-london" {
   command = plan

@@ -1,0 +1,40 @@
+# snowflake_schema.yaml
+
+env: [DEV, INT, UAT, PRD]
+
+location: [BA_LONDON, BA_IRELAND]
+
+warehouse:
+  name: '^WH[X]?_[A-Z0-9_]{1,7}$' # regex to check warehouse names
+  size: [XSMALL, X-SMALL, SMALL, MEDIUM, LARGE] # for normal data projects
+  sizex: [
+      XLARGE,
+      X-LARGE,
+      XXLARGE,
+      X2LARGE,
+      2X-LARGE,
+      XXXLARGE,
+      X3LARGE,
+      3X-LARGE,
+      X4LARGE,
+      4X-LARGE,
+    ] # for special projects
+  cluster: # this is probably OTT but I was having fun ...
+    X-SMALL: 300
+    SMALL: 300
+    MEDIUM: 300
+    LARGE: 160
+    XLARGE: 80
+    X-LARGE: 80
+    XX-LARGE: 40
+    X2-LARGE: 40
+    2X-LARGE: 40
+    XXXLARGE: 20
+    X3-LARGE: 20
+    3X-LARGE: 20
+    X4LARGE: 10
+    4X-LARGE: 10
+
+database:
+  name: '^DB_[A-Z0-9_]{1,7}_[A-Z]{3}$' # regex to check database names
+  schema: '^[A-Z][A-Z0-9_]{2,9}$'

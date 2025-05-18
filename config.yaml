@@ -45,6 +45,7 @@ Snowflake:
       comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
       location: BA_LONDON
 
+  # TODO: warehouses are not related to environments
   warehouse: # defaults to single cluster XSMALL
     - name: WH_TEST1
       size: MEDIUM
