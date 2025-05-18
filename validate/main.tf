@@ -9,4 +9,4 @@ variable "location" { default = "BA_IRELAND" }
 variable "repo" { default = "olympus-infr-adm-snowflake" }
 
 # terraform combines all files with a .tf extension 
-# in particular, our symlinked config.tf and config.yaml and our checks.tf
+# in particular, our symlinked config.tf, config.yaml and our checks.tf

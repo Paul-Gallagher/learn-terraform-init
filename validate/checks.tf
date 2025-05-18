@@ -1,4 +1,3 @@
-
 ####################################################################################
 # checks.tf: these only run during a plan or apply so can't be in the /tests/ folder
 #
@@ -60,6 +59,7 @@ resource "terraform_data" "validate_sections" {
     precondition {
       condition = length(local.warehouses) == 0 || alltrue([
         for key, wh in local.warehouses :
+        # straw man: WHX_ warehouses can be of a larger size - see snowflake_schema.yaml
         can(regex("^WHX_", wh.name)) ?
         contains(local.schema_config.warehouse.sizex, wh.size) :
         contains(local.schema_config.warehouse.size, wh.size)
