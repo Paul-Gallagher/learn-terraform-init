@@ -1,6 +1,9 @@
 
 ####################################################################################
-# checks.tf: these only run during a plan or apply so can't be in the /tests/ folder
+# checks.tfx: these only run during a plan or apply so can't be in the /tests/ folder
+#
+# ABANDONED once I found that checks are just warnings
+#  - rewritten as preconditions which are enforced
 #
 # NB: uses symlinked config.tf and config.yaml
 #
