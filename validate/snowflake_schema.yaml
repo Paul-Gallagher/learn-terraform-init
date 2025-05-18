@@ -44,6 +44,18 @@ warehouse:
     X4LARGE: 10
     4X-LARGE: 10
 
+# database validation
 database:
   name: '^DB_[A-Z0-9_]{1,7}_[A-Z]{3}$' # regex to check database names
   schema: '^[A-Z][A-Z0-9_]{2,9}$' # and one for schema names
+
+# integration validation
+integration:
+  name: '^INT_[A-Z0-9_]{2,15}$' # regex to check integration names
+  buckets: '^[A-Z]+[A-Z0-9_]*(/[A-Z0-9_]+)*/?$' # and bucket names - limit to BA_OLYMPUS_ ?
+  stage:
+    name: '^STG_[A-Z0-9_]{1,7}_[A-Z]{3}$' # and stage names
+
+# service user validation
+service_user:
+  name: '^SU_[A-Z0-9_]{1,7}_[A-Z]{3}$' # regex to check service user names

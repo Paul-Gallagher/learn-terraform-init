@@ -4,7 +4,7 @@
 
 # these are our variable parameters - mostly supplied by the yaml file
 variable "name" { type = string }
-variable "allowed_locations" { type = list(string) }
+variable "buckets" { type = list(string) }
 variable "comment" { type = string }
 variable "owner" { type = string }
 variable "storage_role_arn" { type = string }
@@ -17,7 +17,7 @@ resource "terraform_data" "integration" {
     type                      = "EXTERNAL_STAGE"
     storage_provider          = "S3"
     storage_role_arn          = var.storage_role_arn
-    storage_allowed_locations = var.allowed_locations
+    storage_allowed_locations = var.buckets
     enabled                   = true
     comment                   = var.comment
   })

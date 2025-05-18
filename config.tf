@@ -14,7 +14,7 @@
 # Example uses: terraform apply -auto-approve
 #               terraform apply -auto-approve -var env=uat -var config=demo.yaml
 #
-# Notes: valid locations and defaults should come from some central location
+# Notes: see checks.tf for validation checks
 ####################################################################################
 
 # needs these variables from elsewhere (defined in main.tf but set by Github workflow)
@@ -25,7 +25,6 @@
 
 # allow changing the config file - useful during debugging
 variable "config" { default = "config.yaml" }
-
 
 locals {
   env      = upper(var.env)
@@ -53,10 +52,9 @@ locals {
 
   # all sub-sections are optional, so we need to set up suitable defaults - mostly empty lists
   yaml = {
-    warehouses   = try(local.raw_yaml.warehouse, {})
-    databases    = try(local.raw_yaml.database, {})
-    integrations = try(local.raw_yaml.integration, {})
-    # stages        = try(local.raw_yaml.stage, {})
+    warehouses    = try(local.raw_yaml.warehouse, {})
+    databases     = try(local.raw_yaml.database, {})
+    integrations  = try(local.raw_yaml.integration, {})
     service_users = try(local.raw_yaml.service_user, {})
   }
 
@@ -74,14 +72,11 @@ locals {
   #     if contains(lookup(wh, "env", [local.root_env]), local.root_env)
   #   }
 
-  # Normally, we'd expect items with the SAME name to be for different environments and locations
+  # Normally, we'd expect items with the SAME name to be for different environments and/or locations
   # This more complex version deals with edge cases where this is not the case (eg user error)
-  # This version also allows singe-value lists to be specified by a string
-  # A later addition to allow differences between locations added extra complexity
-  # In the end I broke it down into two steps for a bit of extra legibility
+  # This version also allows single-value lists to be specified by a string
 
   # Step 1: Filter warehouse entries and add defaults for missing keys
-  #          reminder to self: not env specific
   filtered_warehouses = [
     for wh in local.yaml.warehouses :
     {
@@ -177,12 +172,18 @@ locals {
   filtered_integrations = [
     for ig in local.yaml.integrations :
     {
-      name              = lookup(ig, "name", "")
-      allowed_locations = lookup(ig, "allowed_locations", [])
-      stages            = lookup(ig, "stages", [])
-      comment           = lookup(ig, "comment", "Created by ${var.repo}")
-      env               = local.env
-      location          = local.location
+      name     = lookup(ig, "name", "") != "" ? "${ig.name}_${local.env}" : ""
+      buckets  = lookup(ig, "buckets", [])
+      comment  = lookup(ig, "comment", "Created by ${var.repo}")
+      env      = local.env
+      location = local.location
+      stage = [
+        for stg in lookup(ig, "stage", []) : {
+          name    = "${upper(stg.name)}_${local.env}"
+          bucket  = stg.bucket
+          comment = lookup(stg, "comment", "Created by ${var.repo}")
+        }
+      ]
     }
     # filter - see comments for filtered_warehouses above
     if contains([for e in(
@@ -207,84 +208,60 @@ locals {
     } :
     key => {
       # take the last entry in each group (ie the lowest definition in the yaml)
-      name              = entries[length(entries) - 1].name
-      allowed_locations = entries[length(entries) - 1].allowed_locations
-      comment           = entries[length(entries) - 1].comment
-      env               = entries[length(entries) - 1].env
-      location          = entries[length(entries) - 1].location
+      name     = entries[length(entries) - 1].name
+      buckets  = entries[length(entries) - 1].buckets
+      stage    = entries[length(entries) - 1].stage
+      comment  = entries[length(entries) - 1].comment
+      env      = entries[length(entries) - 1].env
+      location = entries[length(entries) - 1].location
     }
   }
 
-  #   stages = {
-  #     for sg in local.yaml.stages :
-  #     can(sg.name) ? "${sg.name}_${local.root_env}" : "" => {
-  #       location    = sg.location
-  #       integration = sg.integration
-  #       comment     = lookup(sg, "comment", "Created by ${local.repo}")
-  #       locations   = lookup(sg, "location", [local.root_location])
-  #     }
-  #   }
-
-  # reminder to self: no env
-  service_users = {
+  filtered_service_users = [
     for su in local.yaml.service_users :
-    can(su.name) ? "${su.name}_${local.root_env}" : "" => {
-      comment   = lookup(su, "comment", "Created by ${var.repo}")
-      locations = lookup(su, "location", [local.root_location])
+    {
+      name     = lookup(su, "name", "") != "" ? "${su.name}_${local.env}" : ""
+      comment  = lookup(su, "comment", "Created by ${var.repo}")
+      location = lookup(su, "location", [local.root_location])
+    }
+    # filter out entries other than those for the deploy location
+    if contains(
+      [
+        for l in(
+          try(
+            # allow location to be a list or a string
+            tolist(lookup(su, "location", [local.root_location])),
+            [lookup(su, "location", local.root_location)]
+          )
+      ) : upper(l)],
+    local.location)
+  ]
+
+  service_users = {
+    for key, entries in {
+      for entry in local.filtered_service_users :
+      "${entry.name}_${entry.location}" => entry...
+    } :
+    key => {
+      name     = entries[length(entries) - 1].name
+      comment  = entries[length(entries) - 1].comment
+      location = entries[length(entries) - 1].location
     }
   }
 }
 
-# run some validation checks
-# resource "terraform_data" "validate_sections" {
-#   input = {
-#     warehouses   = local.warehouses
-#     databases    = local.databases
-#     integrations = local.integrations
-#     # stages        = local.stages
-#     service_users = local.service_users
-#   }
-
-#   lifecycle {
-#     precondition {
-#       condition     = alltrue([for name, _ in local.warehouses : name != ""])
-#       error_message = "ERROR: All warehouses must have a name - please check config.yml"
-#     }
-#     precondition {
-#       condition     = alltrue([for name, _ in local.databases : name != ""])
-#       error_message = "ERROR: All databases must have a name - please check config.yml"
-#     }
-#     precondition {
-#       condition     = alltrue([for name, _ in local.integrations : name != ""])
-#       error_message = "ERROR: All integrations must have a name - please check config.yml"
-#     }
-#     # precondition {
-#     #   condition     = alltrue([for name, _ in local.stages : name != ""])
-#     #   error_message = "ERROR: All stages must have a name - please check config.yml"
-#     # }
-#     precondition {
-#       condition     = alltrue([for name, _ in local.service_users : name != ""])
-#       error_message = "ERROR: service_user must have a name - please check config.yml"
-#     }
-#   }
-
-# }
 
 # --- these are purely for debugging ------------------------------------
 
-# output "validation_inputs" {
-#   description = "Transformed yaml as passed to the validation checks"
-#   value       = terraform_data.validate_sections.input
-# }
 
-output "filtered_warehouses" { value = local.filtered_warehouses }
+# output "filtered_warehouses" { value = local.filtered_warehouses }
 output "warehouses" { value = local.warehouses }
-output "filtered_databases" { value = local.filtered_databases }
+# output "filtered_databases" { value = local.filtered_databases }
 output "databases" { value = local.databases }
-output "filtered_integrations" { value = local.filtered_integrations }
+# output "filtered_integrations" { value = local.filtered_integrations }
 output "integrations" { value = local.integrations }
-# output "stages" { value = local.stages }
+output "filtered_service_users" { value = local.filtered_service_users }
 output "service_users" { value = local.service_users }
 
-output "root_env" { value = local.root_env }
-output "root_location" { value = local.root_location }
+# output "root_env" { value = local.root_env }
+# output "root_location" { value = local.root_location }

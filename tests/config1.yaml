@@ -4,7 +4,12 @@ Snowflake:
   # env: ${env}           # implicitly the deployment environment
   # location: BA_IRELAND  # our default Snowflake instance
 
-  warehouse: # defaults to single cluster XSMALL
+  service_user:
+    - name: SU_TEST1
+      location: BA_LONDON
+      comment: Not quite sure, core-infra creates a DBT_CUST_LOY_BA_MEMBERS_${env}
+
+  warehouse:
     - name: WH_TEST1
       comment: first definition
 
@@ -39,3 +44,18 @@ Snowflake:
     - name: DB_TEST1
       env: uat
       location: ba_london
+
+  integration:
+    - name: INT_INTEGRATION
+      buckets:
+        - BA_OLYMPUS_${env}_CLEANED/
+        - BA_OLYMPUS_${env}_ALIGNED/
+        - BA_OLYMPUS_${env}_RAW/
+      stage:
+        - name: STG_STAGE1 # NOTE: gets an implicit _${env} suffix
+          bucket: BA_OLYMPUS_${env}_ALIGNED/ # has to be one of the allowed ones ?
+          comment: Stage for something or other
+
+        - name: STG_STAGE2
+          bucket: BA_OLYMPUS_${env}_RAW/
+          comment: Stage for something or other

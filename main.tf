@@ -78,12 +78,12 @@ module "snowflake_integration_ba_london" {
     for name, ig in local.integrations : name => ig
     if ig.location == "BA_LONDON"
   }
-  name              = each.key
-  allowed_locations = each.value.allowed_locations
-  comment           = each.value.comment
-  owner             = local.owner
-  storage_role_arn  = local.storage_role_arn
-  providers         = { tfcoremock = tfcoremock.BA_LONDON }
+  name             = each.key
+  buckets          = each.value.buckets
+  comment          = each.value.comment
+  owner            = local.owner
+  storage_role_arn = local.storage_role_arn
+  providers        = { tfcoremock = tfcoremock.BA_LONDON }
 }
 
 # module "snowflake_stage_ba_london" {
@@ -137,12 +137,12 @@ module "snowflake_integration_ba_ireland" {
     for name, ig in local.integrations : name => ig
     if ig.location == "BA_IRELAND"
   }
-  name              = each.key
-  allowed_locations = each.value.allowed_locations
-  comment           = each.value.comment
-  owner             = local.owner
-  storage_role_arn  = local.storage_role_arn
-  providers         = { tfcoremock = tfcoremock.BA_IRELAND }
+  name             = each.key
+  buckets          = each.value.buckets
+  comment          = each.value.comment
+  owner            = local.owner
+  storage_role_arn = local.storage_role_arn
+  providers        = { tfcoremock = tfcoremock.BA_IRELAND }
 }
 
 # module "snowflake_stage_ba_ireland" {

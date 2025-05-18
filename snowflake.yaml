@@ -18,19 +18,17 @@ Snowflake:
     - name: DB_THING2
 
   # these would create storage integrations
-  s3_integration:
+  integration:
     - name: MY_INTEGRATION
-      allowed_locations:
+      buckets:
         - BA_OLYMPUS_${env}_CLEANED/
         - BA_OLYMPUS_${env}_ALIGNED/
         - BA_OLYMPUS_${env}_RAW/
       # role always seems to be aws-account/ba-olympus-snowflake
-
-  # stage can only use allowed locations (or only 1?)
-  stage:
-    - name: MY_STAGE
-      location: BA_OLYMPUS_${env}_ALIGNED/
-      integration: MY_INTEGRATION
+      # stage can only use allowed locations (or only 1?)
+      stage:
+        - name: MY_STAGE
+          location: BA_OLYMPUS_${env}_ALIGNED/
 
   service_user:
     name: AIRFLOW_MY_SERVICE_USER
