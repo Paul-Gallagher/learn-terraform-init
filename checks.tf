@@ -18,6 +18,10 @@ locals {
   bucket_regex       = local.schema_config.integration.buckets
   stage_regex        = local.schema_config.integration.stage.name
   service_user_regex = local.schema_config.service_user.name
+
+  standard_sizes = local.schema_config.warehouse.size
+  extended_sizes = local.schema_config.warehouse.sizex
+  all_sizes      = concat(local.standard_sizes, local.extended_sizes)
 }
 
 resource "terraform_data" "validate_sections" {
@@ -79,16 +83,29 @@ resource "terraform_data" "validate_sections" {
         for key, wh in local.warehouses :
         # straw man: WHX_ warehouses can be of a larger size - see snowflake_schema.yaml
         can(regex("^WHX_", wh.name)) ?
-        contains(local.schema_config.warehouse.sizex, wh.size) :
-        contains(local.schema_config.warehouse.size, wh.size)
+        contains(local.all_sizes, wh.size) :
+        contains(local.standard_sizes, wh.size)
       ])
-      error_message = "ERROR: Invalid Warehouse size(s):\n${join("\n", [
-        for key, wh in local.warehouses :
-        "  - ${wh.name}: ${wh.size} (${can(regex("^WHX_", wh.name)) ? "extended size" : "standard size"})"
-        if can(regex("^WHX_", wh.name)) ?
-        !contains(local.schema_config.warehouse.sizex, wh.size) :
-        !contains(local.schema_config.warehouse.size, wh.size)
-      ])}\n\nValid standard sizes:\n${yamlencode(local.schema_config.warehouse.size)}\nValid extended sizes:\n${yamlencode(local.schema_config.warehouse.sizex)}"
+      # hideously complex expression 'cos I wanted the message hints to be specific depending on the warehousename 
+      error_message = join("", [
+        "ERROR: Invalid Warehouse size(s):\n${join("\n", [
+          # this part iterates thu the warehouses generating a list of this in error
+          for key, wh in local.warehouses :
+          "  - ${wh.name}: ${wh.size} (${can(regex("^WHX_", wh.name)) ? "extended size" : "standard size"})"
+          if can(regex("^WHX_", wh.name)) ?
+          !contains(local.all_sizes, wh.size) :
+          !contains(local.standard_sizes, wh.size)
+        ])}\n\n",
+
+        # while this part shows the appropriate list of valid sizes based on the warehouse name (ie type)
+        length([
+          for key, wh in local.warehouses :
+          wh.name
+          if can(regex("^WHX_", wh.name)) && !contains(local.all_sizes, wh.size)
+        ]) > 0 ?
+        "Valid extended sizes are:\n${yamlencode(local.all_sizes)}" :
+        "Valid standard sizes are:\n${yamlencode(local.standard_sizes)}"
+      ])
     }
 
     # cluster
