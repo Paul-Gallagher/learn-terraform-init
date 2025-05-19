@@ -1,8 +1,13 @@
-# config1.yaml - see warehouse2.tftest.hcl
+# config2.yaml - see warehouse2.tftest.hcl
 
 Snowflake: # NB: root-level defaults
   env: dev
   location: ba_london
+
+  service_user:
+    - name: DBT_CUST_LOY_BA_MEMBERS
+      location: [ba_ireland, ba_london]
+      comment: Not really sure what this is for
 
   warehouse:
     - name: WH_TEST1
@@ -16,3 +21,6 @@ Snowflake: # NB: root-level defaults
     - name: WH_TEST3
       location: ba_ireland
       comment: forced to Ireland only
+
+  database:
+    - name: DB_TEST1

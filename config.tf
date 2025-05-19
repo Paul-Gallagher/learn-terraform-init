@@ -222,7 +222,8 @@ locals {
     {
       name     = lookup(su, "name", "") != "" ? "${su.name}_${local.env}" : ""
       comment  = lookup(su, "comment", "Created by ${var.repo}")
-      location = lookup(su, "location", [local.root_location])
+      env      = local.env
+      location = local.location
     }
     # filter out entries other than those for the deploy location
     if contains(
@@ -245,6 +246,7 @@ locals {
     key => {
       name     = entries[length(entries) - 1].name
       comment  = entries[length(entries) - 1].comment
+      env      = entries[length(entries) - 1].env
       location = entries[length(entries) - 1].location
     }
   }
@@ -260,8 +262,6 @@ output "warehouses" { value = local.warehouses }
 output "databases" { value = local.databases }
 # output "filtered_integrations" { value = local.filtered_integrations }
 output "integrations" { value = local.integrations }
-output "filtered_service_users" { value = local.filtered_service_users }
+# output "filtered_service_users" { value = local.filtered_service_users }
 output "service_users" { value = local.service_users }
 
-# output "root_env" { value = local.root_env }
-# output "root_location" { value = local.root_location }
