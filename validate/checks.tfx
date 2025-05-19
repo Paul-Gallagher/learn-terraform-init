@@ -12,15 +12,15 @@
 # need to write plan output to a file and grep for "assertion failed"
 ####################################################################################
 
-variable "schema" { default = "snowflake_schema.yaml" }
+variable "schema" { default = "config_meta.yaml" }
 
 locals {
-  schema_config = yamldecode(file(var.schema))
+  meta_config = yamldecode(file(var.schema))
 
   # schema has name: regex(WH_[A-Z0-9]+)  - strip off the "regex(" and ")" wrappers  
-  wh_name_regex = trimprefix(trimsuffix(local.schema_config.warehouse.name, ")"), "regex(")
-  db_name_regex = trimprefix(trimsuffix(local.schema_config.database.name, ")"), "regex(")
-  schema_regex  = trimprefix(trimsuffix(local.schema_config.database.schema, ")"), "regex(")
+  wh_name_regex = trimprefix(trimsuffix(local.meta_config.warehouse.name, ")"), "regex(")
+  db_name_regex = trimprefix(trimsuffix(local.meta_config.database.name, ")"), "regex(")
+  schema_regex  = trimprefix(trimsuffix(local.meta_config.database.schema, ")"), "regex(")
 }
 
 ### WAREHOUSE CHECKS ###############################################################
@@ -29,13 +29,13 @@ check "check_warehouse_environments" {
   assert {
     condition = length(local.warehouses) == 0 || alltrue([
       for key, wh in local.warehouses :
-      contains(local.schema_config.env, wh.env)
+      contains(local.meta_config.env, wh.env)
     ])
     error_message = "Invalid Warehouse environment(s):\n${join("\n", [
       for key, wh in local.warehouses :
       "  - ${wh.name}: ${wh.env}"
-      if !contains(local.schema_config.env, wh.env)
-    ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+      if !contains(local.meta_config.env, wh.env)
+    ])}\nValid environments are: ${jsonencode(local.meta_config.env)}"
   }
 }
 
@@ -43,13 +43,13 @@ check "check_warehouse_locations" {
   assert {
     condition = length(local.warehouses) == 0 || alltrue([
       for key, wh in local.warehouses :
-      contains(local.schema_config.location, wh.location)
+      contains(local.meta_config.location, wh.location)
     ])
     error_message = "Invalid Warehouse location(s):\n${join("\n", [
       for key, wh in local.warehouses :
       "  - ${wh.name}: ${wh.location}"
-      if !contains(local.schema_config.location, wh.location)
-    ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+      if !contains(local.meta_config.location, wh.location)
+    ])}\nValid locations are: ${jsonencode(local.meta_config.location)}"
   }
 }
 
@@ -61,16 +61,16 @@ check "check_warehouse_sizes" {
       for key, wh in local.warehouses :
       # check against either the sizex of size list depending on the name
       can(regex("^WHX_", wh.name)) ?
-      contains(local.schema_config.warehouse.sizex, wh.size) :
-      contains(local.schema_config.warehouse.size, wh.size)
+      contains(local.meta_config.warehouse.sizex, wh.size) :
+      contains(local.meta_config.warehouse.size, wh.size)
     ])
     error_message = "Invalid Warehouse size(s):\n${join("\n", [
       for key, wh in local.warehouses :
       "  - ${wh.name}: ${wh.size} (${can(regex("^WHX_", wh.name)) ? "extended size" : "standard size"})"
       if can(regex("^WHX_", wh.name)) ?
-      !contains(local.schema_config.warehouse.sizex, wh.size) :
-      !contains(local.schema_config.warehouse.size, wh.size)
-    ])}\nValid standard sizes: ${jsonencode(local.schema_config.warehouse.size)}\nValid extended sizes: ${jsonencode(local.schema_config.warehouse.sizex)}"
+      !contains(local.meta_config.warehouse.sizex, wh.size) :
+      !contains(local.meta_config.warehouse.size, wh.size)
+    ])}\nValid standard sizes: ${jsonencode(local.meta_config.warehouse.size)}\nValid extended sizes: ${jsonencode(local.meta_config.warehouse.sizex)}"
   }
 }
 
@@ -97,7 +97,7 @@ check "check_warehouse_clusters" {
     condition = length(local.warehouses) == 0 || alltrue([
       for key, wh in local.warehouses :
       wh.max_cluster_count <= lookup(
-        local.schema_config.warehouse.cluster,
+        local.meta_config.warehouse.cluster,
         wh.size,
         10 # absolute default if no match found
       )
@@ -106,13 +106,13 @@ check "check_warehouse_clusters" {
       for key, wh in local.warehouses :
       "  - ${wh.name}: max_cluster_count ${wh.max_cluster_count} exceeds limit of ${
         lookup(
-          local.schema_config.warehouse.cluster,
+          local.meta_config.warehouse.cluster,
           wh.size,
           10
         )
       } for size ${wh.size}"
       if wh.max_cluster_count > lookup(
-        local.schema_config.warehouse.cluster,
+        local.meta_config.warehouse.cluster,
         wh.size,
         10
       )
@@ -126,13 +126,13 @@ check "check_database_environments" {
   assert {
     condition = length(local.databases) == 0 || alltrue([
       for key, db in local.databases :
-      contains(local.schema_config.env, db.env)
+      contains(local.meta_config.env, db.env)
     ])
     error_message = "Invalid Database environment(s):\n${join("\n", [
       for key, db in local.databases :
       "  - ${db.name}: ${db.env}"
-      if !contains(local.schema_config.env, db.env)
-    ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+      if !contains(local.meta_config.env, db.env)
+    ])}\nValid environments are: ${jsonencode(local.meta_config.env)}"
   }
 }
 
@@ -140,13 +140,13 @@ check "check_database_locations" {
   assert {
     condition = length(local.databases) == 0 || alltrue([
       for key, db in local.databases :
-      contains(local.schema_config.location, db.location)
+      contains(local.meta_config.location, db.location)
     ])
     error_message = "Invalid Database location(s):\n${join("\n", [
       for key, db in local.databases :
       "  - ${db.name}: ${db.location}"
-      if !contains(local.schema_config.location, db.location)
-    ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+      if !contains(local.meta_config.location, db.location)
+    ])}\nValid locations are: ${jsonencode(local.meta_config.location)}"
   }
 }
 

@@ -1,5 +1,5 @@
 ####################################################################################
-# snowflake_schema.yaml - auto-generate from somewhere - Atlan ?
+# config_meta.yaml - auto-generate from somewhere - Atlan ?
 #  - schema for config.yaml
 #  - need a json schema version for VS Code
 ####################################################################################

@@ -6,21 +6,21 @@
 # NB: uses symlinked config.tf and config.yaml
 ####################################################################################
 
-variable "schema" { default = "snowflake_schema.yaml" }
+variable "schema" { default = "config_meta.yaml" }
 
 locals {
-  schema_config = yamldecode(file(var.schema))
+  meta_config = yamldecode(file(var.schema))
 
-  wh_name_regex      = local.schema_config.warehouse.name
-  db_name_regex      = local.schema_config.database.name
-  schema_regex       = local.schema_config.database.schema
-  integration_regex  = local.schema_config.integration.name
-  bucket_regex       = local.schema_config.integration.buckets
-  stage_regex        = local.schema_config.integration.stage.name
-  service_user_regex = local.schema_config.service_user.name
+  wh_name_regex      = local.meta_config.warehouse.name
+  db_name_regex      = local.meta_config.database.name
+  schema_regex       = local.meta_config.database.schema
+  integration_regex  = local.meta_config.integration.name
+  bucket_regex       = local.meta_config.integration.buckets
+  stage_regex        = local.meta_config.integration.stage.name
+  service_user_regex = local.meta_config.service_user.name
 
-  standard_sizes = local.schema_config.warehouse.size
-  extended_sizes = local.schema_config.warehouse.sizex
+  standard_sizes = local.meta_config.warehouse.size
+  extended_sizes = local.meta_config.warehouse.sizex
   all_sizes      = concat(local.standard_sizes, local.extended_sizes)
 }
 
@@ -39,14 +39,14 @@ resource "terraform_data" "validate_sections" {
 
     # environment
     precondition {
-      condition     = contains(local.schema_config.env, local.root_env)
-      error_message = "ERROR: Invalid root environment '${local.root_env}'\n\nValid environments are:\n${yamlencode(local.schema_config.env)}"
+      condition     = contains(local.meta_config.env, local.root_env)
+      error_message = "ERROR: Invalid root environment '${local.root_env}'\n\nValid environments are:\n${yamlencode(local.meta_config.env)}"
     }
 
     # location  
     precondition {
-      condition     = contains(local.schema_config.location, local.root_location)
-      error_message = "ERROR: Invalid root location '${local.root_location}'\n\nValid locations are:\n${yamlencode(local.schema_config.location)}"
+      condition     = contains(local.meta_config.location, local.root_location)
+      error_message = "ERROR: Invalid root location '${local.root_location}'\n\nValid locations are:\n${yamlencode(local.meta_config.location)}"
     }
 
     ### WAREHOUSE CHECKS ###############################################################
@@ -55,13 +55,13 @@ resource "terraform_data" "validate_sections" {
     precondition {
       condition = length(local.warehouses) == 0 || alltrue([
         for key, wh in local.warehouses :
-        contains(local.schema_config.location, wh.location)
+        contains(local.meta_config.location, wh.location)
       ])
       error_message = "ERROR: Invalid Warehouse location(s):\n${join("\n", [
         for key, wh in local.warehouses :
         "  - ${wh.name}: ${wh.location}"
-        if !contains(local.schema_config.location, wh.location)
-      ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+        if !contains(local.meta_config.location, wh.location)
+      ])}\nValid locations are: ${jsonencode(local.meta_config.location)}"
     }
 
     # name
@@ -81,7 +81,7 @@ resource "terraform_data" "validate_sections" {
     precondition {
       condition = length(local.warehouses) == 0 || alltrue([
         for key, wh in local.warehouses :
-        # straw man: WHX_ warehouses can be of a larger size - see snowflake_schema.yaml
+        # straw man: WHX_ warehouses can be of a larger size - see config_meta.yaml
         can(regex("^WHX_", wh.name)) ?
         contains(local.all_sizes, wh.size) :
         contains(local.standard_sizes, wh.size)
@@ -113,7 +113,7 @@ resource "terraform_data" "validate_sections" {
       condition = length(local.warehouses) == 0 || alltrue([
         for key, wh in local.warehouses :
         wh.max_cluster_count <= lookup(
-          local.schema_config.warehouse.cluster,
+          local.meta_config.warehouse.cluster,
           wh.size,
           10
         )
@@ -122,13 +122,13 @@ resource "terraform_data" "validate_sections" {
         for key, wh in local.warehouses :
         "  - ${wh.name}: max_cluster_count ${wh.max_cluster_count} exceeds limit of ${
           lookup(
-            local.schema_config.warehouse.cluster,
+            local.meta_config.warehouse.cluster,
             wh.size,
             10
           )
         } for size ${wh.size}"
         if wh.max_cluster_count > lookup(
-          local.schema_config.warehouse.cluster,
+          local.meta_config.warehouse.cluster,
           wh.size,
           10
         )
@@ -141,26 +141,26 @@ resource "terraform_data" "validate_sections" {
     precondition {
       condition = length(local.databases) == 0 || alltrue([
         for key, db in local.databases :
-        contains(local.schema_config.env, db.env)
+        contains(local.meta_config.env, db.env)
       ])
       error_message = "Invalid Database environment(s):\n${join("\n", [
         for key, db in local.databases :
         "  - ${db.name}: ${db.env}"
-        if !contains(local.schema_config.env, db.env)
-      ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+        if !contains(local.meta_config.env, db.env)
+      ])}\nValid environments are: ${jsonencode(local.meta_config.env)}"
     }
 
     # location - not needed 'cos config.tf filters databases by environment
     precondition {
       condition = length(local.databases) == 0 || alltrue([
         for key, db in local.databases :
-        contains(local.schema_config.location, db.location)
+        contains(local.meta_config.location, db.location)
       ])
       error_message = "Invalid Database location(s):\n${join("\n", [
         for key, db in local.databases :
         "  - ${db.name}: ${db.location}"
-        if !contains(local.schema_config.location, db.location)
-      ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+        if !contains(local.meta_config.location, db.location)
+      ])}\nValid locations are: ${jsonencode(local.meta_config.location)}"
     }
 
     # name
@@ -204,26 +204,26 @@ resource "terraform_data" "validate_sections" {
     precondition {
       condition = length(local.integrations) == 0 || alltrue([
         for key, ig in local.integrations :
-        contains(local.schema_config.env, ig.env)
+        contains(local.meta_config.env, ig.env)
       ])
       error_message = "Invalid Integration environment(s):\n${join("\n", [
         for key, ig in local.integrations :
         "  - ${ig.name}: ${ig.env}"
-        if !contains(local.schema_config.env, ig.env)
-      ])}\nValid environments are: ${jsonencode(local.schema_config.env)}"
+        if !contains(local.meta_config.env, ig.env)
+      ])}\nValid environments are: ${jsonencode(local.meta_config.env)}"
     }
 
     # location - not needed 'cos config.tf filters databases by location
     precondition {
       condition = length(local.integrations) == 0 || alltrue([
         for key, ig in local.integrations :
-        contains(local.schema_config.location, ig.location)
+        contains(local.meta_config.location, ig.location)
       ])
       error_message = "Invalid Integration location(s):\n${join("\n", [
         for key, ig in local.integrations :
         "  - ${ig.name}: ${ig.location}"
-        if !contains(local.schema_config.location, ig.location)
-      ])}\nValid locations are: ${jsonencode(local.schema_config.location)}"
+        if !contains(local.meta_config.location, ig.location)
+      ])}\nValid locations are: ${jsonencode(local.meta_config.location)}"
     }
 
     # name

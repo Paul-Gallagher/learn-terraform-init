@@ -20,7 +20,7 @@ Snowflake:
       comment: ${env} London
 
     - name: WH_TEST1
-      size: xmedium
+      size: medium
       comment: latest wins
 
     - name: WH_TEST2
