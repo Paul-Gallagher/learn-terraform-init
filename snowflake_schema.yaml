@@ -1,5 +1,7 @@
 ####################################################################################
 # snowflake_schema.yaml - auto-generate from somewhere - Atlan ?
+#  - schema for config.yaml
+#  - need a json schema version for VS Code
 ####################################################################################
 
 # Snowflake environments (Olympus style)
@@ -8,13 +10,12 @@ env: [DEV, INT, UAT, PRD]
 # Snowflake accounts/locations
 location: [BA_LONDON, BA_IRELAND]
 
-# config.yaml schema - need a json schema version for VS Code
 # experimental straw-man example of only allows larger sizes
 # in this example, the database name must start DBX_
 # we could have more complex rules - eg only certain data products
 # (see checks.tf's checks on size around line 58)
 warehouse:
-  name: '^WH[X]?_[A-Z0-9_]{1,7}$' # regex to check warehouse names
+  name: 'WH[X]?_[A-Z0-9_]{1,7}$' # regex to check warehouse names
   size: [XSMALL, X-SMALL, SMALL, MEDIUM, LARGE] # for normal data projects
   sizex: [
       XLARGE,
